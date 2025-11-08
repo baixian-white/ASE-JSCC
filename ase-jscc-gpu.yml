@@ -1,0 +1,40 @@
+name: ASE-JSCC
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  # ===== PyTorch GPU stack (CUDA 12.1) =====
+  - pytorch=2.3
+  - torchvision=0.18
+  - torchaudio=2.3
+  - pytorch-cuda=12.1  # 来自 nvidia 通道
+  # ===== 常用科学计算/可视化 =====
+  - numpy
+  - scipy
+  - pandas
+  - scikit-image
+  - scikit-learn
+  - matplotlib
+  - tqdm
+  - tensorboard
+  - opencv
+  # ===== COCO/FB 工具栈（detectron2 依赖的一些基础包）=====
+  - pycocotools
+  - fvcore
+  - iopath
+  - yacs
+  - hydra-core
+  - imgaug
+  - pyyaml
+  - cython
+  - ninja
+  - setuptools
+  - wheel
+  - pip:
+      - tabulate
+      - termcolor
+      - cloudpickle

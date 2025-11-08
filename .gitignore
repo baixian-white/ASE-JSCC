@@ -1,0 +1,86 @@
+# ===============================
+# Python cache & compiled files
+# ===============================
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+
+# ===============================
+# Jupyter Notebook checkpoints
+# ===============================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ===============================
+# Virtual environments
+# ===============================
+.venv/
+venv/
+env/
+ENV/
+*.env
+*.venv
+
+# ===============================
+# Conda environment and logs
+# ===============================
+*.conda
+*.yaml~
+*.yml~
+*.log
+
+# ===============================
+# VS Code / IDE configs
+# ===============================
+.vscode/
+.idea/
+*.code-workspace
+
+# ===============================
+# Datasets, results, checkpoints
+# ===============================
+data/
+datasets/
+results/
+outputs/
+checkpoints/
+runs/
+logs/
+*.pth
+*.pt
+*.ckpt
+*.npz
+*.npy
+*.h5
+*.mat
+
+# ===============================
+# Temporary & generated files
+# ===============================
+tmp/
+temp/
+__MACOSX/
+.DS_Store
+Thumbs.db
+*.bak
+*.swp
+*.tmp
+
+# ===============================
+# Notebook exports / figures
+# ===============================
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.svg
+*.eps
+
+# ===============================
+# Project-specific files
+# ===============================
+# 忽略生成的训练数据与模型
+asset/
+ASE-JSCCtrain.log
+split_ucmerced_landuse_output/
