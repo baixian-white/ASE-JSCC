@@ -46,7 +46,9 @@ def Fading_channel(x, snr, P = 2):
     
     h_I = torch.randn(batch_size, K).to(device)
     h_R = torch.randn(batch_size, K).to(device) 
-    h_com = torch.complex(h_I, h_R)  
+    #生成随机的复数信号
+    h_com = torch.complex(h_I, h_R) 
+    #将原本的X调整为复数信号  
     x_com = torch.complex(x[:, 0:feature_length:2], x[:, 1:feature_length:2])
     y_com = h_com*x_com
     
