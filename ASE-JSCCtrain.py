@@ -9,7 +9,9 @@ import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 import time
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+#注意，在单卡训练，cuda 编号是0
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 
 transform = transforms.Compose([
     transforms.Resize((256, 256)), #把图像缩放为固定尺寸 256×256
@@ -19,8 +21,8 @@ transform = transforms.Compose([
 
 mean = 0  
 std_dev = 0.1  
-train_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-train/Images', transform=transform)
-test_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-test/Images', transform=transform)
+train_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-train', transform=transform)
+test_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-test', transform=transform)
 
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True) #shuffle = True 训练集打乱样本顺序，有助于梯度稳定和泛化
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
@@ -52,7 +54,7 @@ def Fading_channel(x, snr, P = 2):
     x_com = torch.complex(x[:, 0:feature_length:2], x[:, 1:feature_length:2])
     y_com = h_com*x_com
     
-    n_I = torch.sqrt(P/gamma)*torch.randn(batch_size, K).to(device)
+                                                                                               
     n_R = torch.sqrt(P/gamma)*torch.randn(batch_size, K).to(device)
     noise = torch.complex(n_I, n_R)
     
@@ -137,6 +139,7 @@ class Autoencoder(nn.Module):
         if channel_type == 'Fading' or channel_type == 'Combined_channel':
             x = self.flatten(x)
             print("after flatten x.shape", x.shape)
+            #为每个样本在【0，28】之间随机生成一个整数，作为该样本传输信道的信噪比
             SNR = torch.randint(0, 28, (x.shape[0], 1)).to(device)
         else :
             #对 AWGN：保持 4D，不展平。
@@ -185,12 +188,12 @@ class SE_Block(nn.Module):
     def forward(self, x, cr=0.8):
         b, c, h, w = x.size()
         y = self.gap(x).view(b, c)
-        print("y shape of Fsq:", y.shape)
+        print("特征选择-平均池化:", y.shape)
         y = self.fc(y)
-        print("y shape of Fex:", y.shape)
+        print("特征选择-全连接层:", y.shape)
         mask = mask_gen(y, cr).view(b,c,1,1)
-        print("mask shape:", mask.shape)
-        print("x shape:", x.shape)
+        print("特征选择-掩码生成，掩码形状：", mask.shape)
+        print("源数据形状:", x.shape)
         return x * mask
 
 
@@ -200,6 +203,15 @@ class SatelliteClassifierWithAttention(nn.Module):
         super(SatelliteClassifierWithAttention, self).__init__()
         #加载一个 ResNet-18 主干网络
         self.resnet18 = resnet18(pretrained=True)#pretrained=True会自动下载或加载 ImageNet 上训练好的参数
+        # ✅ 替换原resnet18第一层为7*7这里改第一层卷积为 3×3
+        self.resnet18.conv1 = nn.Conv2d(
+            in_channels=3,
+            out_channels=64,
+            kernel_size=3,
+            stride=2,   # 下采样保持不变
+            padding=1,
+            bias=False
+        )
         in_features = self.resnet18.fc.in_features #获取 ResNet18 最后全连接层的输入特征维度。对 ResNet18，这个值是 512。
         self.attention_module = SE_Block(in_features) #在 ResNet 的特征输出后增加一个通道注意力模块
         self.antoencoder = Autoencoder() #模拟信道传输与恢复过程，连续卷积将特征从 (B,512,H,W) 压缩到 (B,32,H,W)。
