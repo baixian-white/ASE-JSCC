@@ -4,11 +4,21 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from torchvision.models import resnet18  # 以ResNet18为例，也可以根据实际情况选择其他模型
+from torchvision.models import resnet18,ResNet18_Weights  # 以ResNet18为例，也可以根据实际情况选择其他模型
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 import time
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from pathlib import Path
+import math
+
+# 注意，在单卡训练，cuda 编号是0
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+# 训练输出目录（先全局建一次，避免保存时报错）
+Path("checkpoint").mkdir(parents=True, exist_ok=True)
+Path("logs/ResNet18").mkdir(parents=True, exist_ok=True)
+
 #注意，在单卡训练，cuda 编号是0 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -207,7 +217,7 @@ class SatelliteClassifierWithAttention(nn.Module):
         #初始化
         super(SatelliteClassifierWithAttention, self).__init__()
         #加载一个 ResNet-18 主干网络
-        self.resnet18 = resnet18(pretrained=True)#pretrained=True会自动下载或加载 ImageNet 上训练好的参数
+        self.resnet18 = resnet18(weights=ResNet18_Weights.DEFAULT)#pretrained=True会自动下载或加载 ImageNet 上训练好的参数
         # ✅ 替换原resnet18第一层为7*7这里改第一层卷积为 3×3
         self.resnet18.conv1 = nn.Conv2d(
             in_channels=3,
@@ -306,7 +316,7 @@ def continue_train(cr, num_epochs, pre_checkpoint, channel_type):
 
         writer.add_scalar('Test Accuracy', accuracy)
 # Save the model with the specified cr and num_epochs in the file name
-    save_path = f'checkpoint/classifier_attention_auto_UCMerced_LandUse_{channel_type}_ResNet18_60epoch_0.5_up_{num_epochs}epoch_{cr}.pth'
+    save_path = f'checkpoint/classifier_attention_auto_UCMerced_LandUse_{channel_type}_ResNet18_20epoch_0.8_up_{num_epochs}epoch_{cr}.pth'
     torch.save(model.state_dict(), save_path)
 
     writer.close()
