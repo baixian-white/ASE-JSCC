@@ -1,0 +1,97 @@
+# ===============================
+#  基础 Python / Conda / Jupyter
+# ===============================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+*.pkl
+*.npz
+*.npy
+.DS_Store
+
+# 环境配置
+.env
+.venv/
+venv/
+env/
+ENV/
+.ipynb_checkpoints/
+.idea/
+.vscode/
+*.swp
+
+# ===============================
+#  Conda / Pip 缓存
+# ===============================
+*.yaml~
+*.yml~
+conda-meta/
+pkgs/
+*.lock
+pip-wheel-metadata/
+*.whl
+
+# ===============================
+#  数据与实验输出
+# ===============================
+data/
+datasets/
+runs/
+outputs/
+results/
+checkpoints/
+weights/
+logs/
+*.log
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.tfevents.*
+events.out.tfevents*
+
+# ===============================
+#  图像、临时文件
+# ===============================
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.gif
+*.tif
+*.tiff
+*.svg
+*.pdf
+
+# ===============================
+#  临时脚本与未命名文件
+# ===============================
+Untitled*.ipynb
+test*.py
+tmp/
+temp/
+*.bak
+*.tmp
+
+# ===============================
+#  系统与 IDE 生成文件
+# ===============================
+Thumbs.db
+ehthumbs.db
+*.lnk
+desktop.ini
+.vscode/*
+!.vscode/settings.json   # 保留项目配置（可选）
+
+# ===============================
+#  特殊忽略：模型与训练缓存
+# ===============================
+wandb/
+tensorboard/
+*.run
+*.out
+*.err
