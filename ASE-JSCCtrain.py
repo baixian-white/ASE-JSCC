@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 import time
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-#注意，在单卡训练，cuda 编号是0
+#注意，在单卡训练，cuda 编号是0 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 
@@ -52,13 +52,18 @@ def Fading_channel(x, snr, P = 2):
     h_com = torch.complex(h_I, h_R) 
     #将原本的X调整为复数信号  
     x_com = torch.complex(x[:, 0:feature_length:2], x[:, 1:feature_length:2])
+    # 实际模拟的衰落
     y_com = h_com*x_com
     
-                                                                                               
+    #根据信噪比和 信号强度来算出噪声强度并产生随机噪声
+    n_I = torch.sqrt(P/gamma)*torch.randn(batch_size, K).to(device)                                                                                          
     n_R = torch.sqrt(P/gamma)*torch.randn(batch_size, K).to(device)
+
+    #将原本的实数信号调整为负数信号
     noise = torch.complex(n_I, n_R)
-    
+    #模型信号经过信道衰落后，叠加噪声后的信号
     y_add = y_com + noise
+
     y = y_add/h_com
     
     y_out = torch.zeros(batch_size, feature_length).to(device)
@@ -142,7 +147,7 @@ class Autoencoder(nn.Module):
             #为每个样本在【0，28】之间随机生成一个整数，作为该样本传输信道的信噪比
             SNR = torch.randint(0, 28, (x.shape[0], 1)).to(device)
         else :
-            #对 AWGN：保持 4D，不展平。
+            #对 AWGN：保持 4D，不展平。  
             # 采样形状 (B,32,H,1) 的 SNR(dB)：每个样本、每个通道、每一行一个 SNR，沿 W 方向共享。
             SNR = torch.randint(0, 28, (x.shape[0], x.shape[1], x.shape[2], 1)).to(device)
         #传入信道
