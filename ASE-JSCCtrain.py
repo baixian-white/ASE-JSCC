@@ -32,10 +32,10 @@ transform = transforms.Compose([
 mean = 0  
 std_dev = 0.1  
 train_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-train', transform=transform)
-test_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-test', transform=transform)
+valid_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-test', transform=transform)
 
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True) #shuffle = True 训练集打乱样本顺序，有助于梯度稳定和泛化
-test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+valid_loader = DataLoader(valid_dataset, batch_size=64, shuffle=False)
 
 
 # The (real) AWGN channel   
@@ -93,9 +93,9 @@ def Fading_channel(x, snr, P = 2):
 def Combined_channel(x, snr, batch_size, channel, height, width):
     P=2
     x_faded = Fading_channel(x, snr, P)
-    print ("x_faded.shape:",x_faded.shape)
+    # print ("x_faded.shape:",x_faded.shape)
     x_faded = x_faded.view((batch_size, channel, height, width))
-    print ("x_faded.view.shape:",x_faded.shape)
+    # print ("x_faded.view.shape:",x_faded.shape)
     snr = torch.randint(0, 28, (x_faded.shape[0], x_faded.shape[1], x_faded.shape[2], 1)).to(device)
     x_combined = AWGN_channel(x_faded, snr, P)
     return x_combined
@@ -141,7 +141,7 @@ class Autoencoder(nn.Module):
         # 输入期望是 (B, 512, H, W)，四个 3×3 卷积把通道从 512→256→128→64→32，保持空间尺寸不变（stride=1, padding=1）
         # 输出形状：(B, 32, H, W)
         x = self.encoder(x)
-        print("encoder x.shape:",x.shape)
+        # print("encoder x.shape:",x.shape)
         #在编码空间加加性高斯噪声：mean 与 std_dev 分别是均值和标准差（前面定义了 mean=0, std_dev=0.1）
         noise = torch.randn_like(x) * std_dev + mean
         x = x + noise
@@ -153,7 +153,7 @@ class Autoencoder(nn.Module):
             #采样一个 每个样本一个 SNR(dB) 的列向量 (B,1)。
         if channel_type == 'Fading' or channel_type == 'Combined_channel':
             x = self.flatten(x)
-            print("after flatten x.shape", x.shape)
+            # print("after flatten x.shape", x.shape)
             #为每个样本在【0，28】之间随机生成一个整数，作为该样本传输信道的信噪比
             SNR = torch.randint(0, 28, (x.shape[0], 1)).to(device)
         else :
@@ -163,7 +163,7 @@ class Autoencoder(nn.Module):
         #传入信道
         x = Channel(x, SNR, channel_type, batch_size, channel, height, width)
         #把 2D（Fading）或 4D（AWGN/Combined）的输出，强制整形成 (B,32,H,W)，方便后面的解码
-        print("after Channel x.shape:",x.shape)
+        # print("after Channel x.shape:",x.shape)
         x = x.view((batch_size, channel, height, width))   
         #用四个反卷积把通道从 32→64→128→256→512 还原；最后 Sigmoid 把输出限制在 [0,1]，形状回到 (B, 512, H, W)。  
         x = self.decoder(x)
@@ -203,12 +203,12 @@ class SE_Block(nn.Module):
     def forward(self, x, cr=0.8):
         b, c, h, w = x.size()
         y = self.gap(x).view(b, c)
-        print("特征选择-平均池化:", y.shape)
+        # print("特征选择-平均池化:", y.shape)
         y = self.fc(y)
-        print("特征选择-全连接层:", y.shape)
+        # print("特征选择-全连接层:", y.shape)
         mask = mask_gen(y, cr).view(b,c,1,1)
-        print("特征选择-掩码生成，掩码形状：", mask.shape)
-        print("源数据形状:", x.shape)
+        # print("特征选择-掩码生成，掩码形状：", mask.shape)
+        # print("源数据形状:", x.shape)
         return x * mask
 
 
@@ -244,14 +244,14 @@ class SatelliteClassifierWithAttention(nn.Module):
         x = self.resnet18.layer4(x)
 
         #到这里是ResNet18 前半段，输入通常是 (B,3,H,W) 的图像。到 layer4 结束，得到语义特征 (B,512,H',W')（H', W' 是下采样后的尺寸，默认下采样32倍）
-        print("before x.shape:",x.shape)#（B,512,H/32,H/32）
+        # print("before x.shape:",x.shape)#（B,512,H/32,H/32）
         # print("before x:",x)
         #加入自注意力
         x = self.attention_module(x, cr)#SE+二值掩码
-        print("after attention_module x.shape:",x.shape)#（B,512,H/32,H/32）->（B,512,1,1）->(B,512/CR,1,1)->(B,512,1,1)
+        # print("after attention_module x.shape:",x.shape)#（B,512,H/32,H/32）->（B,512,1,1）->(B,512/CR,1,1)->(B,512,1,1)
         #加入信道编码并传入信道并解码
         x = self.antoencoder(x, channel_type) #(B,410,1,1)->(B,32,1,1)->加噪->传入信道->解码->(B,512,1,1)->（B,512,H/32,H/32）
-        print("after antoencoder x.shape:",x.shape)
+        # print("after antoencoder x.shape:",x.shape)
         x = self.resnet18.avgpool(x) ## (B,512,1,1)
         # in_features_fc = x.size(1)
         # self.resnet18.fc = nn.Linear(in_features_fc, num_classes)
@@ -304,7 +304,7 @@ def continue_train(cr, num_epochs, pre_checkpoint, channel_type):
         total = 0
 
         with torch.no_grad():
-            for images, labels in test_loader:
+            for images, labels in valid_loader:
                 images, labels = images.to(device), labels.to(device)
                 outputs = model(images, cr, channel_type)
                 _, predicted = torch.max(outputs, 1)
@@ -333,77 +333,96 @@ def continue_train(cr, num_epochs, pre_checkpoint, channel_type):
         file.write(f'Test Accuracy: {accuracy}\n')
         file.write('train over!\n')
 
-def train(cr, num_epochs, channel_type):#传入三个参数：cr-压缩比；num_epochs-训练周期；channel_type-信道类型
-    start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-    num_classes = len(train_dataset.classes)  #num_classes类别数
-    model = SatelliteClassifierWithAttention(num_classes) 
-    model = model.to(device) #
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001) #Adam，初始学习率 1e-3。
-    #学习率调度器，传入的是训练集平均损失（见后文），当它“无改进”持续 patience=5 个 epoch，就把 LR 乘以 0.1。
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)
+def train(cr, num_epochs, channel_type):  # 定义训练函数，传入压缩比cr、训练轮数num_epochs、信道类型channel_type
+    start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())  # 记录训练开始时间（格式化成年月日时分秒）
+    num_classes = len(train_dataset.classes)  # 计算训练集中类别数量，用于定义分类器输出维度
+    model = SatelliteClassifierWithAttention(num_classes)  # 创建模型实例，传入类别数
+    model = model.to(device)  # 将模型加载到GPU或CPU设备上
+    criterion = nn.CrossEntropyLoss()  # 定义交叉熵损失函数（适合分类任务）
+    optimizer = optim.Adam(model.parameters(), lr=0.001)  # 定义Adam优化器，学习率为1e-3
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)  
+    # 定义学习率调度器：当验证集Loss在连续5个epoch内没有改进时，学习率乘以0.1
 
-    writer = SummaryWriter() #用于 TensorBoard 记录训练 loss / 测试 acc
-    # num_epochs = 20
+    writer = SummaryWriter()  # 创建TensorBoard日志记录器，用于记录loss和accuracy
+    best_valid_loss = float('inf')  # 记录当前最小验证集loss（初始为正无穷）
+    best_model_path = None  # 记录最优模型路径
+    # num_epochs = 20  # （这行被注释掉）如果需要固定训练轮数可以直接写在这里
 
-    for epoch in range(num_epochs):
-        model.train()
-        running_loss = 0.0
+    for epoch in range(num_epochs):  # 循环遍历每一个训练周期
+        model.train()  # 设置模型为训练模式（启用Dropout、BN等）
+        running_loss = 0.0  # 初始化本轮累计损失为0
+        
 
-        for images, labels in train_loader:
-            print("epoch:",epoch)
-            print("image.shape",images.shape)
-            images, labels = images.to(device), labels.to(device)
-            optimizer.zero_grad() # 清理梯度
-            outputs = model(images, cr, channel_type) #前向
-            loss = criterion(outputs, labels) #损失
-            loss.backward() #反向传播
-            optimizer.step() #更新参数
+        for images, labels in train_loader:  # 遍历训练集中的每个批次
+            # print("image.shape", images.shape)  # 打印输入图像的尺寸信息（调试用）
+            images, labels = images.to(device), labels.to(device)  # 将图像和标签移动到GPU或CPU
+            optimizer.zero_grad()  # 清空优化器中的梯度缓存
+            outputs = model(images, cr, channel_type)  # 前向传播，得到模型预测结果
+            loss = criterion(outputs, labels)  # 计算损失（预测结果与真实标签的差距）
+            loss.backward()  # 反向传播，计算梯度
+            optimizer.step()  # 优化器更新参数
 
-            running_loss += loss.item() # 累积当前 batch 的损失
+            running_loss += loss.item()  # 累加每个batch的损失值（用于计算平均loss）
 
-        print(f'Epoch {epoch+1}/{num_epochs}, Loss: {running_loss/len(train_loader)}')
- 
-        avg_train_loss = running_loss / len(train_loader)
+        print(f'Epoch {epoch+1}/{num_epochs}, Loss: {running_loss/len(train_loader)}')  
+        # 打印当前epoch的平均训练损失
+        avg_train_loss = running_loss / len(train_loader)  # 计算本轮平均训练损失
 
-        scheduler.step(avg_train_loss)
-        # 会在 epoch 结束时除以 batch 数，得到平均训练损失
-        writer.add_scalar('Training Loss', running_loss/len(train_loader), epoch + 1)
+        scheduler.step(avg_train_loss)  # 将平均训练损失传给学习率调度器（判断是否降低学习率）
+        writer.add_scalar('Training Loss', running_loss/len(train_loader), epoch + 1)  
+        # 将训练损失写入TensorBoard日志（x轴为epoch）
 
-        model.eval()
-        correct = 0
-        total = 0
+        # 记录当前学习率
+        current_lr = optimizer.param_groups[0]['lr']  # 获取当前学习率
+        writer.add_scalar('Learning Rate', current_lr, epoch + 1)  # 写入TensorBoard
 
-        with torch.no_grad():
-            for images, labels in test_loader:
-                images, labels = images.to(device), labels.to(device) #
-                outputs = model(images, cr, channel_type)#output = (B,21)
-                _, predicted = torch.max(outputs, 1) #在当前批次中每一个样本都找到预测的类型
-                total += labels.size(0) #labels.size(0)当前batch的样本数量，进行累加
-                correct += (predicted == labels).sum().item() #统计预测正确的样本数
+        model.eval()  # 设置模型为评估模式（关闭Dropout、BN的随机性）
+        correct = 0  # 初始化正确预测样本数
+        total = 0  # 初始化样本总数
+        valid_loss_sum = 0.0  # 用于累计验证集loss
+        with torch.no_grad():  # 禁用梯度计算，加快推理速度并节省显存
+            for images, labels in valid_loader:  # 遍历测试集
+                images, labels = images.to(device), labels.to(device)  # 数据送入GPU或CPU
+                outputs = model(images, cr, channel_type)  # 前向传播得到预测结果
+                _, predicted = torch.max(outputs, 1)  # 取每个样本预测得分最高的类别索引
+                total += labels.size(0)  # 累加测试样本总数
+                correct += (predicted == labels).sum().item()  # 累加预测正确的样本数
 
-        accuracy = correct / total
-        print(f'Test Accuracy: {accuracy}')
-        writer.add_scalar('Test Accuracy', accuracy)
+                loss_val = criterion(outputs, labels)  # 计算验证集loss
+                valid_loss_sum += loss_val.item()  # 累加loss
 
-    # Save the model with the specified cr and num_epochs in the file name
-    save_path = f'checkpoint/classifier_attention_auto_UCMerced_LandUse_Combined_channel_ResNet18_{num_epochs}epoch_{cr}.pth'
-    torch.save(model.state_dict(), save_path)
 
-    
-    writer.close()
-    current_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-    # Write results to a txt file
+        accuracy = correct / total  # 计算测试集准确率
+        avg_valid_loss = valid_loss_sum / len(valid_loader)  # 计算平均验证集loss
+        writer.add_scalar('Valid Loss', avg_valid_loss, epoch + 1)  # 写入TensorBoard
+
+        # 判断是否保存最优模型
+        if avg_valid_loss < best_valid_loss:
+            best_valid_loss = avg_valid_loss
+            best_model_path = f'checkpoint/best_classifier_attention_auto_UCMerced_LandUse_{channel_type}_ResNet18_{num_epochs}epoch_{cr}.pth'
+            torch.save(model.state_dict(), best_model_path)
+            print(f'>>> New best model saved: {best_model_path} (valid_loss={best_valid_loss:.6f})')
+
+        print(f'Test Accuracy: {accuracy}')  # 打印当前epoch的测试准确率
+        writer.add_scalar('Test Accuracy', accuracy,epoch+1)  # 将准确率写入TensorBoard日志
+
+    # 构造保存模型的文件路径，包含epoch和压缩比信息
+    save_path = f'checkpoint/classifier_attention_auto_UCMerced_LandUse_{channel_type}_ResNet18_{num_epochs}epoch_{cr}.pth'
+    torch.save(model.state_dict(), save_path)  # 保存模型参数到指定路径
+
+    writer.close()  # 关闭TensorBoard日志文件
+    current_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())  # 记录训练结束时间
+
+    # 将训练信息写入txt日志文件
     with open(f'logs/ResNet18/classifier_attention_auto_UCMerced_LandUse_Combined_channel_ResNet18_{num_epochs}epoch_{cr}.txt', 'w') as file:
-        file.write('strat training...\n')
-        file.write(f'Time: {start_time}----------{current_time}\n')
-        file.write(f'model name:{save_path}\n')
-        file.write(f'model name:{channel_type}\n')
-        file.write(f'CR (Compression Ratio): {cr}\n')
-        file.write(f'Num Epochs: {num_epochs}\n')
-        file.write(f'Test Accuracy: {accuracy}\n')
-        file.write('train over!\n')
-
+        file.write('strat training...\n')  # 写入日志头
+        file.write(f'Time: {start_time}----------{current_time}\n')  # 写入训练时间段
+        file.write(f'model name:{save_path}\n')  # 写入模型文件路径
+        file.write(f'chanel name:{channel_type}\n')  # 写入信道类型（这一行字段名重复了）
+        file.write(f'CR (Compression Ratio): {cr}\n')  # 写入压缩比信息
+        file.write(f'Num Epochs: {num_epochs}\n')  # 写入训练轮数
+        file.write(f'Test Accuracy: {accuracy}\n')  # 写入最终测试集准确率
+        file.write('train over!\n')  # 写入训练完成标志
 def main(task,cr,num_epochs,pre_checkpoint,channel_type):
     if task == 'continue':
         print("continue_train start!")
