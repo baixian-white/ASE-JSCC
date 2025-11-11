@@ -1,97 +1,73 @@
-# ===============================
-#  基础 Python / Conda / Jupyter
-# ===============================
+# ==============================
+#  Python / PyTorch 项目通用忽略项
+# ==============================
+
+# 编译缓存与临时文件
 __pycache__/
 *.py[cod]
 *.pyo
-*.pyd
 *.so
-*.egg-info/
-*.egg
-*.pkl
-*.npz
-*.npy
-.DS_Store
+*.out
+*.log
 
-# 环境配置
-.env
+# Jupyter Notebook 检查点
+.ipynb_checkpoints/
+
+# 虚拟环境 / Conda / venv
+.env/
 .venv/
 venv/
 env/
-ENV/
-.ipynb_checkpoints/
-.idea/
-.vscode/
-*.swp
+*.egg-info/
+*.egg
 
-# ===============================
-#  Conda / Pip 缓存
-# ===============================
-*.yaml~
-*.yml~
-conda-meta/
-pkgs/
-*.lock
-pip-wheel-metadata/
-*.whl
+# ==============================
+#  项目专属：ASE-JSCC 训练工程
+# ==============================
 
-# ===============================
-#  数据与实验输出
-# ===============================
-data/
-datasets/
-runs/
-outputs/
-results/
-checkpoints/
-weights/
+# 训练生成的模型权重与日志
+checkpoint/
 logs/
-*.log
-*.pt
+runs/                # TensorBoard 默认目录
 *.pth
+*.pt
 *.ckpt
-*.onnx
-*.tfevents.*
-events.out.tfevents*
+*.tar
 
-# ===============================
-#  图像、临时文件
-# ===============================
+# TensorBoard 事件文件
+events.out.tfevents.*
+
+# ==============================
+#  数据集与中间文件
+# ==============================
+data/UCMerced_LandUse/
+data/UCMerced_LandUse-train/
+data/UCMerced_LandUse-valid/
+data/UCMerced_LandUse-test/
+*.zip
+*.rar
+
+# 临时图片或输出
 *.png
 *.jpg
 *.jpeg
 *.bmp
 *.gif
-*.tif
-*.tiff
-*.svg
-*.pdf
 
-# ===============================
-#  临时脚本与未命名文件
-# ===============================
-Untitled*.ipynb
-test*.py
-tmp/
-temp/
-*.bak
-*.tmp
-
-# ===============================
-#  系统与 IDE 生成文件
-# ===============================
+# ==============================
+#  系统文件与编辑器缓存
+# ==============================
+.DS_Store
 Thumbs.db
-ehthumbs.db
-*.lnk
-desktop.ini
-.vscode/*
-!.vscode/settings.json   # 保留项目配置（可选）
+.vscode/
+.idea/
 
-# ===============================
-#  特殊忽略：模型与训练缓存
-# ===============================
-wandb/
-tensorboard/
-*.run
-*.out
-*.err
+# ==============================
+#  环境文件与个人配置（可选）
+# ==============================
+# 若你希望共享 environment.yml，就不要忽略
+# environment.yml
+ase-jscc-gpu.yml
+
+# 个人命令笔记等非必要文档
+命令行提示.md
