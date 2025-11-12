@@ -22,17 +22,32 @@ Path("logs/ResNet18").mkdir(parents=True, exist_ok=True)
 #注意，在单卡训练，cuda 编号是0 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
+train_transform = transforms.Compose([
+    transforms.Resize((256, 256)),
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomVerticalFlip(p=0.5),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1, hue=0.05),
+    transforms.ToTensor(),
+    transforms.Normalize((0.485,0.456,0.406),(0.229,0.224,0.225)),
+])
+# 训练集用 train_transform；
 
-transform = transforms.Compose([
-    transforms.Resize((256, 256)), #把图像缩放为固定尺寸 256×256
-    transforms.ToTensor(), #将图像像素值从[0-255]缩放为[0,1]，调整维度顺序为【c,h,w】
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))#将范围从 [0,1] 映射到 [-1,1]（即 (x-0.5)/0.5）
+# 验证集仍用无增强的 transform（无增强）
+valid_transform = transforms.Compose([
+    transforms.Resize((256, 256)),   # 把原始图片缩放到 256×256 尺寸
+    transforms.ToTensor(),           # 转成张量，并把像素值从 [0,255] → [0,1]
+    transforms.Normalize(
+        mean=(0.485, 0.456, 0.406), # 对应 ImageNet 数据集的通道均值
+        std=(0.229, 0.224, 0.225)   # 对应 ImageNet 数据集的通道标准差
+    ),
 ])
 
+
 mean = 0  
-std_dev = 0.1  
-train_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-train', transform=transform)
-valid_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-test', transform=transform)
+std_dev = 0.1 
+
+train_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-train', transform=train_transform)
+valid_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-test', transform=valid_transform)
 
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True) #shuffle = True 训练集打乱样本顺序，有助于梯度稳定和泛化
 valid_loader = DataLoader(valid_dataset, batch_size=64, shuffle=False)
@@ -218,15 +233,15 @@ class SatelliteClassifierWithAttention(nn.Module):
         super(SatelliteClassifierWithAttention, self).__init__()
         #加载一个 ResNet-18 主干网络
         self.resnet18 = resnet18(weights=ResNet18_Weights.DEFAULT)#pretrained=True会自动下载或加载 ImageNet 上训练好的参数
-        # ✅ 替换原resnet18第一层为7*7这里改第一层卷积为 3×3
-        self.resnet18.conv1 = nn.Conv2d(
-            in_channels=3,
-            out_channels=64,
-            kernel_size=3,
-            stride=2,   # 下采样保持不变
-            padding=1,
-            bias=False
-        )
+        # # ✅ 替换原resnet18第一层为7*7这里改第一层卷积为 3×3
+        # self.resnet18.conv1 = nn.Conv2d(
+        #     in_channels=3,
+        #     out_channels=64,
+        #     kernel_size=3,
+        #     stride=2,   # 下采样保持不变
+        #     padding=1,
+        #     bias=False
+        # )
         in_features = self.resnet18.fc.in_features #获取 ResNet18 最后全连接层的输入特征维度。对 ResNet18，这个值是 512。
         self.attention_module = SE_Block(in_features) #在 ResNet 的特征输出后增加一个通道注意力模块
         self.antoencoder = Autoencoder() #模拟信道传输与恢复过程，连续卷积将特征从 (B,512,H,W) 压缩到 (B,32,H,W)。
@@ -338,8 +353,8 @@ def train(cr, num_epochs, channel_type):  # 定义训练函数，传入压缩比
     num_classes = len(train_dataset.classes)  # 计算训练集中类别数量，用于定义分类器输出维度
     model = SatelliteClassifierWithAttention(num_classes)  # 创建模型实例，传入类别数
     model = model.to(device)  # 将模型加载到GPU或CPU设备上
-    criterion = nn.CrossEntropyLoss()  # 定义交叉熵损失函数（适合分类任务）
-    optimizer = optim.Adam(model.parameters(), lr=0.001)  # 定义Adam优化器，学习率为1e-3
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.1) # 定义交叉熵损失函数（适合分类任务）
+    optimizer = optim.Adam(model.parameters(), lr=3e-4, weight_decay=1e-4)  # 定义Adam优化器，学习率为1e-3,加入正则化约束
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)  
     # 定义学习率调度器：当验证集Loss在连续5个epoch内没有改进时，学习率乘以0.1
 
@@ -368,7 +383,7 @@ def train(cr, num_epochs, channel_type):  # 定义训练函数，传入压缩比
         # 打印当前epoch的平均训练损失
         avg_train_loss = running_loss / len(train_loader)  # 计算本轮平均训练损失
 
-        scheduler.step(avg_train_loss)  # 将平均训练损失传给学习率调度器（判断是否降低学习率）
+
         writer.add_scalar('Training Loss', running_loss/len(train_loader), epoch + 1)  
         # 将训练损失写入TensorBoard日志（x轴为epoch）
 
@@ -396,6 +411,8 @@ def train(cr, num_epochs, channel_type):  # 定义训练函数，传入压缩比
         avg_valid_loss = valid_loss_sum / len(valid_loader)  # 计算平均验证集loss
         writer.add_scalar('Valid Loss', avg_valid_loss, epoch + 1)  # 写入TensorBoard
 
+        scheduler.step(avg_valid_loss)  # 将平均训练损失传给学习率调度器（判断是否降低学习率）
+
         # 判断是否保存最优模型
         if avg_valid_loss < best_valid_loss:
             best_valid_loss = avg_valid_loss
@@ -403,8 +420,8 @@ def train(cr, num_epochs, channel_type):  # 定义训练函数，传入压缩比
             torch.save(model.state_dict(), best_model_path)
             print(f'>>> New best model saved: {best_model_path} (valid_loss={best_valid_loss:.6f})')
 
-        print(f'Test Accuracy: {accuracy}')  # 打印当前epoch的测试准确率
-        writer.add_scalar('Test Accuracy', accuracy,epoch+1)  # 将准确率写入TensorBoard日志
+        print(f'valid Accuracy: {accuracy}')  # 打印当前epoch的测试准确率
+        writer.add_scalar('valid Accuracy', accuracy,epoch+1)  # 将准确率写入TensorBoard日志
 
     # 构造保存模型的文件路径，包含epoch和压缩比信息
     save_path = f'checkpoint/classifier_attention_auto_UCMerced_LandUse_{channel_type}_ResNet18_{num_epochs}epoch_{cr}.pth'
