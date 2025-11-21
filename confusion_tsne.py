@@ -8,6 +8,36 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
+import seaborn as sns
+
+# 为 21 个类别手动指定一组差异非常大的颜色（来自 ColorBrewer/Tab 调色板混合）
+COLOR_LIST = [
+    "#e6194b",  # 0  红
+    "#3cb44b",  # 1  绿
+    "#4363d8",  # 2  蓝
+    "#f58231",  # 3  橙
+    "#911eb4",  # 4  紫
+    "#46f0f0",  # 5  青
+    "#f032e6",  # 6  粉紫
+    "#bcf60c",  # 7  黄绿
+    "#fabebe",  # 8  浅粉
+    "#008080",  # 9  深青
+    "#e6beff",  # 10 淡紫
+    "#9a6324",  # 11 棕
+    "#fffac8",  # 12 很浅黄
+    "#800000",  # 13 深红
+    "#aaffc3",  # 14 薄荷绿
+    "#808000",  # 15 橄榄
+    "#ffd8b1",  # 16 肉色
+    "#000075",  # 17 深蓝
+    "#808080",  # 18 灰
+    "#ffe119",  # 19 亮黄
+    "#469990",  # 20 蓝绿
+]
+
+# 再准备几种不同的点形状，颜色接近时还能靠形状区分
+MARKER_LIST = ['o', 's', '^', 'v', 'D', 'P', 'X']
+
 
 # ==========================
 # 一、基础配置（按需改这几行）
@@ -288,50 +318,8 @@ class SatelliteClassifierWithAttention(nn.Module):
 
 
 # ==========================
-# 六、三个阶段的前向封装
+# 六、前向封装
 # ==========================
-
-def forward_backbone_only(model, x):
-    """
-    阶段1：纯 ResNet18（不经过 注意力 / 自编码 / 信道）
-    """
-    x = model.resnet18.conv1(x)
-    x = model.resnet18.bn1(x)
-    x = model.resnet18.relu(x)
-    x = model.resnet18.maxpool(x)
-
-    x = model.resnet18.layer1(x)
-    x = model.resnet18.layer2(x)
-    x = model.resnet18.layer3(x)
-    x = model.resnet18.layer4(x)
-
-    x = model.resnet18.avgpool(x)
-    x = x.view(x.size(0), -1)
-    x = model.resnet18.fc(x)
-    return x
-
-
-def forward_backbone_plus_attention(model, x, cr):
-    """
-    阶段2：ResNet18 + 注意力（不经过 自编码 / 信道）
-    """
-    x = model.resnet18.conv1(x)
-    x = model.resnet18.bn1(x)
-    x = model.resnet18.relu(x)
-    x = model.resnet18.maxpool(x)
-
-    x = model.resnet18.layer1(x)
-    x = model.resnet18.layer2(x)
-    x = model.resnet18.layer3(x)
-    x = model.resnet18.layer4(x)
-
-    x = model.attention_module(x, cr=cr)
-
-    x = model.resnet18.avgpool(x)
-    x = x.view(x.size(0), -1)
-    x = model.resnet18.fc(x)
-    return x
-
 
 def forward_full_pipeline(model, x, cr, channel_type):
     """
@@ -387,13 +375,12 @@ def extract_features_and_labels(model, data_loader, feature_fn):
         for images, labels in data_loader:
             images = images.to(device)
             labels = labels.to(device)
-
             feats = feature_fn(model, images)      # [B, D]
             feats = feats.detach().cpu().numpy()   # 转 numpy
             all_feats.append(feats)
             all_labels.append(labels.cpu().numpy())
 
-    features = np.concatenate(all_feats, axis=0)
+    features = np.concatenate(all_feats, axis=0) #把多个数组按指定维度拼接在一起
     labels = np.concatenate(all_labels, axis=0)
     return features, labels
 
@@ -420,7 +407,7 @@ def plot_tsne_for_full_pipeline(model, cr, channel_type, save_path_png):
     )
     embeddings = tsne.fit_transform(features)   # [N, 2]
 
-    # 3) 画散点图
+     # 3) 画散点图（使用 seaborn 的 husl 调色板，21 种明显不同的颜色）
     plt.figure(figsize=(8, 8))
     num_classes = len(CLASS_NAMES)
 
@@ -428,11 +415,21 @@ def plot_tsne_for_full_pipeline(model, cr, channel_type, save_path_png):
         idxs = (labels == class_idx)
         if np.sum(idxs) == 0:
             continue
+
+        # 颜色：从 21 个手动颜色里取（你的类刚好是 21 个）
+        color = COLOR_LIST[class_idx % len(COLOR_LIST)]
+        # 形状：如果以后类别多于颜色数，会自动轮换 marker
+        marker = MARKER_LIST[(class_idx // len(COLOR_LIST)) % len(MARKER_LIST)]
+
         plt.scatter(
             embeddings[idxs, 0],
             embeddings[idxs, 1],
-            s=10,
-            alpha=0.7,
+            s=18,                # 点稍微画大一点，更好分
+            alpha=0.9,
+            color=color,
+            marker=marker,
+            edgecolors="black",  # 黑色细边，和背景/其他类拉开
+            linewidth=0.2,
             label=CLASS_NAMES[class_idx]
         )
 
@@ -522,30 +519,14 @@ def main():
     model.load_state_dict(state, strict=True)
     print(f"已从 {weight_path} 加载模型参数。")
 
-    # 阶段1：纯 ResNet 主干
-    eval_and_plot_confusion(
-        model=model,
-        forward_fn=lambda m, x: forward_backbone_only(m, x),
-        stage_name="Stage1: Backbone Only (No Attention, No Channel)",
-        save_path_png=f"logs/ResNet18/confusion_stage1_backbone.png"
-    )
-
-    # 阶段2：ResNet + 注意力（无信道）
-    eval_and_plot_confusion(
-        model=model,
-        forward_fn=lambda m, x: forward_backbone_plus_attention(m, x, cr_for_attention),
-        stage_name=f"Stage2: Backbone + Attention (cr={cr_for_attention}, No Channel)",
-        save_path_png=f"logs/ResNet18/confusion_stage2_attention.png"
-    )
-
-    # 阶段3：完整流水线（注意力 + 自编码 + 指定信道）
+    # 完整流水线（注意力 + 自编码 + 指定信道）
     eval_and_plot_confusion(
         model=model,
         forward_fn=lambda m, x: forward_full_pipeline(m, x, cr_for_attention, channel_type_for_full),
         stage_name=f"Stage3: Full Pipeline (cr={cr_for_attention}, channel={channel_type_for_full})",
         save_path_png=f"logs/ResNet18/confusion_stage3_full_{channel_type_for_full}.png"
     )
-     # ===== 对 Stage3 Full Pipeline 画一张 t-SNE 图 =====
+     # ===== 对  Full Pipeline 画一张 t-SNE 图 =====
     tsne_path = f"logs/ResNet18/tsne_stage3_full_{channel_type_for_full}.png"
     plot_tsne_for_full_pipeline(
         model=model,
