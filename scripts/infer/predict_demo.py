@@ -151,7 +151,6 @@ class SatelliteClassifierWithAttention(nn.Module):
     def __init__(self, num_classes):
         super(SatelliteClassifierWithAttention, self).__init__()
         self.resnet18 = resnet18(weights=ResNet18_Weights.DEFAULT)
-        self.resnet18.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1, bias=False)
         in_features = self.resnet18.fc.in_features
         self.attention_module = SE_Block(in_features)
         self.antoencoder = Autoencoder()
@@ -179,7 +178,7 @@ def build_transform():
     return transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
 
 def load_classes_from_file(classes_file):
@@ -192,12 +191,7 @@ def prepare_model(ckpt_path, num_classes):
     # 构建模型并加载权重
     model = SatelliteClassifierWithAttention(num_classes).to(device)
     state = torch.load(str(ckpt_path), map_location=device)
-    # 兼容 strict=False 的方式，以防环境差异导致某些键不匹配
-    missing, unexpected = model.load_state_dict(state, strict=False)
-    if missing:
-        print(f"[Warn] Missing keys when loading: {missing}")
-    if unexpected:
-        print(f"[Warn] Unexpected keys when loading: {unexpected}")
+    model.load_state_dict(state, strict=True)
     model.eval()
     return model
 
