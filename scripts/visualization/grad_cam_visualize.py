@@ -35,15 +35,29 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from torchvision.models import resnet18, ResNet18_Weights
 
+def get_project_root() -> Path:
+    current = Path(__file__).resolve().parent
+    for candidate in (current, *current.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    return Path.cwd()
+
+
+PROJECT_ROOT = get_project_root()
+
 # ==========================
 # 一、基础配置（按需修改）
 # ==========================
 
 # 1) 训练好的完整模型权重
-weight_path = "checkpoint/best_classifier_attention_auto_UCMerced_LandUse_Combined_channel_ResNet18_150epoch_0.8.pth"
+weight_path = (
+    PROJECT_ROOT
+    / "checkpoint"
+    / "best_classifier_attention_auto_UCMerced_LandUse_Combined_channel_ResNet18_150epoch_0.8.pth"
+)
 
 # 2) 测试集路径
-data_root = "data/UCMerced_LandUse-test"
+data_root = PROJECT_ROOT / "data" / "UCMerced_LandUse-test"
 
 # 3) 信道类型
 channel_type_for_full = "Combined_channel"  # "AWGN" / "Fading" / "Combined_channel"
@@ -64,7 +78,7 @@ TARGET_LAYERS = {
 
 # 设备与输出目录
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-out_dir = Path("logs/ResNet18_gradcam_multi")
+out_dir = PROJECT_ROOT / "logs" / "ResNet18_gradcam_multi"
 out_dir.mkdir(parents=True, exist_ok=True)
 
 # 固定随机种子，方便复现
@@ -86,7 +100,7 @@ test_transform = transforms.Compose([
     transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
 ])
 
-test_dataset = datasets.ImageFolder(root=data_root, transform=test_transform)
+test_dataset = datasets.ImageFolder(root=str(data_root), transform=test_transform)
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 CLASS_NAMES = test_dataset.classes
 
@@ -451,7 +465,7 @@ def main(args):
     model = SatelliteClassifierWithAttention(num_classes=num_classes).to(device)
 
     # 加载训练好的权重
-    state = torch.load(weight_path, map_location=device)
+    state = torch.load(str(weight_path), map_location=device)
     model.load_state_dict(state, strict=True)
     model.eval()
     print(f"已从 {weight_path} 加载模型。")

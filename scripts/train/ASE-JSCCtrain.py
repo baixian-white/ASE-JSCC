@@ -11,16 +11,39 @@ import time
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pathlib import Path
 import math
+import os
+
+def get_project_root() -> Path:
+    current = Path(__file__).resolve().parent
+    for candidate in (current, *current.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    return Path.cwd()
+
+
+PROJECT_ROOT = get_project_root()
 
 # 注意，在单卡训练，cuda 编号是0
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # 训练输出目录（先全局建一次，避免保存时报错）
-Path("checkpoint").mkdir(parents=True, exist_ok=True)
-Path("logs/ResNet18").mkdir(parents=True, exist_ok=True)
+# Path("AID_150_combine_0.8/checkpoint").mkdir(parents=True, exist_ok=True)
+# Path("AID_150_combine_0.8/logs/ResNet18").mkdir(parents=True, exist_ok=True)
 
-#注意，在单卡训练，cuda 编号是0 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+def get_exp_dirs(num_epochs, channel_type, cr, dataset_name="Soya"):
+    channel_tag = {
+        "AWGN": "awgn",
+        "Fading": "fading",
+        "Combined_channel": "combine",
+    }[channel_type]
+
+    base_dir = PROJECT_ROOT / f"{dataset_name}_{num_epochs}_{channel_tag}_{cr}"
+    ckpt_dir = base_dir / "checkpoint"
+    log_dir = base_dir / "logs" / "ResNet18"
+
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    return ckpt_dir, log_dir
 
 train_transform = transforms.Compose([
     transforms.Resize((256, 256)),
@@ -46,8 +69,14 @@ valid_transform = transforms.Compose([
 mean = 0  
 std_dev = 0.1 
 
-train_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-train', transform=train_transform)
-valid_dataset = datasets.ImageFolder(root='data/UCMerced_LandUse-test', transform=valid_transform)
+train_dataset = datasets.ImageFolder(
+    root=str(PROJECT_ROOT / "data" / "SoyaHealthVision" / "train"),
+    transform=train_transform,
+)
+valid_dataset = datasets.ImageFolder(
+    root=str(PROJECT_ROOT / "data" / "SoyaHealthVision" / "valid"),
+    transform=valid_transform,
+)
 
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True) #shuffle = True 训练集打乱样本顺序，有助于梯度稳定和泛化
 valid_loader = DataLoader(valid_dataset, batch_size=64, shuffle=False)
@@ -276,12 +305,17 @@ class SatelliteClassifierWithAttention(nn.Module):
         return x
 
 def continue_train(cr, num_epochs, pre_checkpoint, channel_type):
+    ckpt_dir, log_dir = get_exp_dirs(num_epochs, channel_type, cr, dataset_name="Soya")
+
     start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
     num_classes = len(train_dataset.classes)  
     model = SatelliteClassifierWithAttention(num_classes)
     model = model.to(device)
 
-    pretrained_dict = torch.load(f'{pre_checkpoint}')
+    pre_checkpoint_path = Path(pre_checkpoint)
+    if not pre_checkpoint_path.is_absolute():
+        pre_checkpoint_path = PROJECT_ROOT / pre_checkpoint_path
+    pretrained_dict = torch.load(str(pre_checkpoint_path))
     model_dict = model.state_dict()
 
     pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
@@ -291,7 +325,7 @@ def continue_train(cr, num_epochs, pre_checkpoint, channel_type):
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)
     criterion = nn.CrossEntropyLoss()
-    writer = SummaryWriter()
+    writer = SummaryWriter(str(log_dir))
 
     # num_epochs = 50 
 
@@ -329,16 +363,15 @@ def continue_train(cr, num_epochs, pre_checkpoint, channel_type):
         accuracy = correct / total
         print(f'Test Accuracy: {accuracy}')
 
-        writer.add_scalar('Test Accuracy', accuracy)
+        writer.add_scalar('Test Accuracy', accuracy,epoch + 1)
 # Save the model with the specified cr and num_epochs in the file name
-    save_path = f'checkpoint/classifier_attention_auto_UCMerced_LandUse_{channel_type}_ResNet18_20epoch_0.8_up_{num_epochs}epoch_{cr}.pth'
+    save_path = ckpt_dir / f'classifier_attention_auto_Soya_{channel_type}_ResNet18_up_{num_epochs}epoch_{cr}.pth'
     torch.save(model.state_dict(), save_path)
-
+    log_path = log_dir / f'classifier_attention_auto_Soya_{channel_type}_ResNet18_up_{num_epochs}epoch_{cr}.txt'
     writer.close()
-
     current_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
     # Write results to a txt file
-    with open(f'logs/ResNet18/classifier_attention_auto_UCMerced_LandUse_{channel_type}_ResNet18_60_up_{num_epochs}epoch_{cr}.txt', 'w') as file:
+    with open(log_path, 'w') as file:
         file.write('strat comtinue training...\n')
         file.write(f'Time: {start_time}----------{current_time}\n')
         file.write(f'model name:{save_path}\n')
@@ -349,6 +382,7 @@ def continue_train(cr, num_epochs, pre_checkpoint, channel_type):
         file.write('train over!\n')
 
 def train(cr, num_epochs, channel_type):  # 定义训练函数，传入压缩比cr、训练轮数num_epochs、信道类型channel_type
+    ckpt_dir, log_dir = get_exp_dirs(num_epochs, channel_type, cr, dataset_name="Soya")
     start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())  # 记录训练开始时间（格式化成年月日时分秒）
     num_classes = len(train_dataset.classes)  # 计算训练集中类别数量，用于定义分类器输出维度
     model = SatelliteClassifierWithAttention(num_classes)  # 创建模型实例，传入类别数
@@ -358,7 +392,7 @@ def train(cr, num_epochs, channel_type):  # 定义训练函数，传入压缩比
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)  
     # 定义学习率调度器：当验证集Loss在连续5个epoch内没有改进时，学习率乘以0.1
 
-    writer = SummaryWriter()  # 创建TensorBoard日志记录器，用于记录loss和accuracy
+    writer = SummaryWriter(str(log_dir))  # 创建TensorBoard日志记录器，用于记录loss和accuracy
     best_valid_loss = float('inf')  # 记录当前最小验证集loss（初始为正无穷）
     best_model_path = None  # 记录最优模型路径
     # num_epochs = 20  # （这行被注释掉）如果需要固定训练轮数可以直接写在这里
@@ -416,7 +450,7 @@ def train(cr, num_epochs, channel_type):  # 定义训练函数，传入压缩比
         # 判断是否保存最优模型
         if avg_valid_loss < best_valid_loss:
             best_valid_loss = avg_valid_loss
-            best_model_path = f'checkpoint/best_classifier_attention_auto_UCMerced_LandUse_{channel_type}_ResNet18_{num_epochs}epoch_{cr}.pth'
+            best_model_path = ckpt_dir / f'best_classifier_attention_auto_Soya_{channel_type}_ResNet18_{num_epochs}epoch_{cr}.pth'
             torch.save(model.state_dict(), best_model_path)
             print(f'>>> New best model saved: {best_model_path} (valid_loss={best_valid_loss:.6f})')
 
@@ -424,14 +458,16 @@ def train(cr, num_epochs, channel_type):  # 定义训练函数，传入压缩比
         writer.add_scalar('valid Accuracy', accuracy,epoch+1)  # 将准确率写入TensorBoard日志
 
     # 构造保存模型的文件路径，包含epoch和压缩比信息
-    save_path = f'checkpoint/classifier_attention_auto_UCMerced_LandUse_{channel_type}_ResNet18_{num_epochs}epoch_{cr}.pth'
-    torch.save(model.state_dict(), save_path)  # 保存模型参数到指定路径
+    save_path = ckpt_dir / f'classifier_attention_auto_Soya_{channel_type}_ResNet18_{num_epochs}epoch_{cr}.pth'
+    torch.save(model.state_dict(), save_path)
+
 
     writer.close()  # 关闭TensorBoard日志文件
     current_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())  # 记录训练结束时间
 
     # 将训练信息写入txt日志文件
-    with open(f'logs/ResNet18/classifier_attention_auto_UCMerced_LandUse_Combined_channel_ResNet18_{num_epochs}epoch_{cr}.txt', 'w') as file:
+    log_path = log_dir / f'classifier_attention_auto_Soya_{channel_type}_ResNet18_{num_epochs}epoch_{cr}.txt'
+    with open(log_path, 'w') as file:
         file.write('strat training...\n')  # 写入日志头
         file.write(f'Time: {start_time}----------{current_time}\n')  # 写入训练时间段
         file.write(f'model name:{save_path}\n')  # 写入模型文件路径
@@ -459,4 +495,3 @@ if __name__ == "__main__":
     parser.add_argument('--channel_type', choices=['AWGN', 'Fading',"Combined_channel"], default='Combined_channel', help='Specify the channel_type for transfer.')
     args = parser.parse_args()
     main(args.task, args.cr, args.num_epochs,args.pre_checkpoint,args.channel_type)
-

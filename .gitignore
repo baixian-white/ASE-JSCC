@@ -1,73 +1,65 @@
 # ==============================
-#  Python / PyTorch 项目通用忽略项
+# ASE-JSCC .gitignore
 # ==============================
 
-# 编译缓存与临时文件
-__pycache__/
-*.py[cod]
-*.pyo
-*.so
-*.out
-*.log
-
-# Jupyter Notebook 检查点
-.ipynb_checkpoints/
-
-# 虚拟环境 / Conda / venv
-.env/
-.venv/
-venv/
-env/
-*.egg-info/
-*.egg
-
-# ==============================
-#  项目专属：ASE-JSCC 训练工程
-# ==============================
-
-# 训练生成的模型权重与日志
-checkpoint/
-logs/
-runs/                # TensorBoard 默认目录
-*.pth
-*.pt
-*.ckpt
-*.tar
-
-# TensorBoard 事件文件
-events.out.tfevents.*
-
-# ==============================
-#  数据集与中间文件
-# ==============================
-data/UCMerced_LandUse/
-data/UCMerced_LandUse-train/
-data/UCMerced_LandUse-valid/
-data/UCMerced_LandUse-test/
-*.zip
-*.rar
-
-# 临时图片或输出
-*.png
-*.jpg
-*.jpeg
-*.bmp
-*.gif
-
-# ==============================
-#  系统文件与编辑器缓存
-# ==============================
+# -------- OS / Editor --------
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
 
-# ==============================
-#  环境文件与个人配置（可选）
-# ==============================
-# 若你希望共享 environment.yml，就不要忽略
-# environment.yml
-ase-jscc-gpu.yml
+# -------- Python --------
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
 
-# 个人命令笔记等非必要文档
-命令行提示.md
+# -------- Virtual Env --------
+.env
+.env.*
+.venv/
+venv/
+env/
+conda-meta/
+*.egg-info/
+
+# -------- Build / Package --------
+build/
+dist/
+*.egg
+
+# -------- ML Artifacts --------
+# root-level outputs
+checkpoint/
+logs/
+runs/
+
+# nested experiment outputs
+**/checkpoint/
+**/logs/
+**/runs/
+
+# model files and tensorboard events
+*.pth
+*.pt
+*.ckpt
+*.onnx
+events.out.tfevents.*
+
+# -------- Datasets / Large Files --------
+data/
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+
+# -------- Temporary --------
+*.tmp
+*.temp
+*.bak
+*.swp

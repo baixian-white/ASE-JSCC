@@ -7,7 +7,7 @@
 
 用法：
   在 ASE-JSCC 根目录运行：
-    python split_ucmerced_official.py
+    python scripts/data_prep/split_ucmerced_landuse.py
 
 说明：
   - 按“每个类别”分别随机划分，保证类别分布一致（分层采样）。
@@ -15,13 +15,22 @@
   - 固定随机种子以保证可复现。
 """
 
-import os
 import shutil
 import random
 from pathlib import Path
 
+def get_project_root() -> Path:
+    current = Path(__file__).resolve().parent
+    for candidate in (current, *current.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    return Path.cwd()
+
+
+PROJECT_ROOT = get_project_root()
+
 # ---- 可根据需要调整的参数（也可改为 argparse） ----
-REPO_ROOT = Path("data")  # 工程根目录
+REPO_ROOT = PROJECT_ROOT / "data"  # 项目内 data 目录
 SRC_DIR   =  REPO_ROOT / "UCMerced_LandUse" / "images"          # 官方结构的源目录
 DST_TRAIN =   REPO_ROOT / "UCMerced_LandUse-train"    # 训练集输出
 DST_VALID =   REPO_ROOT / "UCMerced_LandUse-valid"    # 验证集输出

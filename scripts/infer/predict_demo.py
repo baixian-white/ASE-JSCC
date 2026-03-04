@@ -1,7 +1,6 @@
 # predict_demo.py
 import argparse
 import csv
-import os
 from pathlib import Path
 
 import torch
@@ -12,6 +11,24 @@ from PIL import Image
 # ==== 引入你训练脚本里的模型依赖 ====
 from torchvision.models import resnet18, ResNet18_Weights
 import torch.nn.functional as F
+
+def get_project_root() -> Path:
+    current = Path(__file__).resolve().parent
+    for candidate in (current, *current.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    return Path.cwd()
+
+
+PROJECT_ROOT = get_project_root()
+
+
+def resolve_path(path_str: str) -> Path:
+    path = Path(path_str)
+    if path.is_absolute():
+        return path
+    return PROJECT_ROOT / path
+
 
 # ========= 复用你训练时的组件（SE_Block / Autoencoder / Channel 等） =========
 mean = 0
@@ -174,7 +191,7 @@ def load_classes_from_file(classes_file):
 def prepare_model(ckpt_path, num_classes):
     # 构建模型并加载权重
     model = SatelliteClassifierWithAttention(num_classes).to(device)
-    state = torch.load(ckpt_path, map_location=device)
+    state = torch.load(str(ckpt_path), map_location=device)
     # 兼容 strict=False 的方式，以防环境差异导致某些键不匹配
     missing, unexpected = model.load_state_dict(state, strict=False)
     if missing:
@@ -191,7 +208,7 @@ def predict_image(model, img_path, transform, cr, channel_type, class_names=None
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
-    img = Image.open(img_path).convert('RGB')
+    img = Image.open(str(img_path)).convert('RGB')
     x = transform(img).unsqueeze(0).to(device)  # (1,3,256,256)
     logits = model(x, cr, channel_type)         # (1,num_classes)
     probs = F.softmax(logits, dim=1).cpu().squeeze(0)  # (num_classes,)
@@ -213,7 +230,7 @@ def predict_folder(model, data_dir, transform, cr, channel_type, batch_size=64, 
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
-    ds = datasets.ImageFolder(root=data_dir, transform=transform)
+    ds = datasets.ImageFolder(root=str(data_dir), transform=transform)
     dl = torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     idx_to_class = {v: k for k, v in ds.class_to_idx.items()}  # 预测类别索引 -> 类别名
@@ -271,23 +288,28 @@ def parse_args():
 
 def main():
     args = parse_args()
+    checkpoint_path = resolve_path(args.checkpoint)
+    image_path = resolve_path(args.image) if args.image else None
+    data_dir_path = resolve_path(args.data_dir) if args.data_dir else None
+    classes_file_path = resolve_path(args.classes_file) if args.classes_file else None
+    csv_out_path = resolve_path(args.csv_out) if args.csv_out else None
 
     # 预处理（需与训练一致）
     transform = build_transform()
 
-    if args.image is None and args.data_dir is None:
+    if image_path is None and data_dir_path is None:
         raise ValueError("Please provide either --image or --data_dir")
 
     # 确定 num_classes 与类名
-    if args.data_dir is not None:
+    if data_dir_path is not None:
         # 批量：根据 ImageFolder 的子目录数量确定类别数
-        ds_tmp = datasets.ImageFolder(root=args.data_dir, transform=transform)
+        ds_tmp = datasets.ImageFolder(root=str(data_dir_path), transform=transform)
         num_classes = len(ds_tmp.classes)
         class_names = ds_tmp.classes  # 用子目录名作为标签
     else:
         # 单图：需要 classes_file，或者你清楚 num_classes（若不给 classes_file，将用索引）
-        if args.classes_file is not None:
-            class_names = load_classes_from_file(args.classes_file)
+        if classes_file_path is not None:
+            class_names = load_classes_from_file(classes_file_path)
             num_classes = len(class_names)
         else:
             # 如果没有 classes_file，就需要你明确告诉 num_classes；这里假设21（UCMerced）
@@ -297,13 +319,13 @@ def main():
             num_classes = 21
 
     # 构建并加载模型
-    model = prepare_model(args.checkpoint, num_classes)
+    model = prepare_model(checkpoint_path, num_classes)
 
-    if args.image is not None:
+    if image_path is not None:
         # 单张图片预测
         pairs = predict_image(
             model=model,
-            img_path=args.image,
+            img_path=image_path,
             transform=transform,
             cr=args.cr,
             channel_type=args.channel_type,
@@ -311,22 +333,22 @@ def main():
             topk=args.topk,
             seed=args.seed
         )
-        print(f"[Result] {args.image}")
+        print(f"[Result] {image_path}")
         for rank, (label, prob) in enumerate(pairs, 1):
             print(f"  Top{rank}: {label}  ({prob:.4f})")
 
-    if args.data_dir is not None:
+    if data_dir_path is not None:
         # 整目录批量预测
         results, ordered_class_names = predict_folder(
             model=model,
-            data_dir=args.data_dir,
+            data_dir=data_dir_path,
             transform=transform,
             cr=args.cr,
             channel_type=args.channel_type,
             batch_size=args.batch_size,
             num_workers=args.num_workers,
             seed=args.seed,
-            csv_out=args.csv_out
+            csv_out=csv_out_path
         )
         print(f"[Summary] {len(results)} images predicted.")
         print("[Classes]", ordered_class_names)

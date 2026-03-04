@@ -1,33 +1,104 @@
 # ASE-JSCC
-**High Quality Compression and Transmission of Remote Sensing Images Based on Semantic Communication**
 
-**This is Attention-enhanced Semantic Extraction and Joint Source Channel Coding model code**
+Attention-enhanced Semantic Extraction and Joint Source Channel Coding for remote sensing image classification.
 
-*The framework diagram is shown below：*
-![overall](https://github.com/user-attachments/assets/1ee9f51b-6a92-43dd-a522-b2da16d2255f)
+## 重构后的项目结构
 
-*The most important attention selection module structure：*
-![attention](https://github.com/user-attachments/assets/12ba839f-7f6f-4523-a516-98fbbf5d75ba)
+```text
+ASE-JSCC/
+├── scripts/
+│   ├── train/
+│   │   └── ASE-JSCCtrain.py
+│   ├── eval/
+│   │   ├── confusion_tsne_UM.py
+│   │   ├── confusion_tsne_AID.py
+│   │   └── confusion_tsne_Soya.py
+│   ├── visualization/
+│   │   └── grad_cam_visualize.py
+│   ├── infer/
+│   │   └── predict_demo.py
+│   └── data_prep/
+│       ├── split_ucmerced_landuse.py
+│       ├── split_AID.py
+│       └── split_Soya.py
+├── configs/
+│   ├── ase-jscc-gpu.yml
+│   └── environment.yml
+├── docs/
+│   ├── dataset.txt
+│   ├── 命令行提示.md
+│   ├── 项目说明书.md
+│   └── 项目结构说明书.md
+├── notebooks/
+│   ├── Untitled.ipynb
+│   └── Untitled1.ipynb
+├── data/
+├── checkpoint/
+├── logs/
+└── runs/
+```
 
-**System environment configuration:**  
-  1、Linux  
-  2、Python 3.6.10  
-  3、pytorch 1.7.1  
-  For more detailed configuration, see the file environment.yml  
+> 所有脚本已改为“自动定位项目根目录（.git）”，可在任意工作目录执行。
 
-**Running steps：**  
-  1、Download the entire project to the local machine  
-  2、Ensure the environment is correctly configured  
-  3、Start the project: Use the appropriate command to start the project based on the type of project:  
-    python filename.py  
+## 环境准备
 
-**Tips:**  
-  1、ASE-JSCCtrain.py contains the complete model  
-  2、The download paths for the datasets used in the paper are all included in the dataset.txt file  
+```bash
+conda env create -f configs/ase-jscc-gpu.yml
+conda activate ASE-JSCC
+```
 
-The content of this process is based on my own practice. If there are any issues, please contact me at the email: jyy@hnu.edu.cn.
+## 常用命令
 
+### 1) 数据划分
 
+```bash
+python scripts/data_prep/split_ucmerced_landuse.py
+python scripts/data_prep/split_AID.py
+python scripts/data_prep/split_Soya.py data/SoyaHealthVision data/SoyaHealthVision
+```
 
+### 2) 训练
 
+```bash
+python scripts/train/ASE-JSCCtrain.py --task train --cr 0.8 --num_epochs 150 --channel_type Combined_channel
+```
 
+断点续训：
+
+```bash
+python scripts/train/ASE-JSCCtrain.py --task continue --cr 0.8 --num_epochs 30 --pre_checkpoint checkpoint/xxx.pth --channel_type Combined_channel
+```
+
+### 3) 评估可视化（混淆矩阵 + t-SNE）
+
+```bash
+python scripts/eval/confusion_tsne_UM.py
+python scripts/eval/confusion_tsne_AID.py
+python scripts/eval/confusion_tsne_Soya.py
+```
+
+### 4) Grad-CAM
+
+```bash
+python scripts/visualization/grad_cam_visualize.py -c overpass -n 6
+```
+
+### 5) 推理
+
+单图：
+
+```bash
+python scripts/infer/predict_demo.py --checkpoint checkpoint/xxx.pth --image data/xxx.jpg --channel_type Combined_channel --cr 0.8
+```
+
+批量：
+
+```bash
+python scripts/infer/predict_demo.py --checkpoint checkpoint/xxx.pth --data_dir data/UCMerced_LandUse-test --csv_out logs/predictions.csv
+```
+
+## 说明
+
+- 数据下载链接见 [docs/dataset.txt](docs/dataset.txt)
+- 详细项目说明见 [docs/项目说明书.md](docs/项目说明书.md)
+- 本次重构说明见 [docs/项目结构说明书.md](docs/项目结构说明书.md)
