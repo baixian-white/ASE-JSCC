@@ -1,11 +1,25 @@
-# NAS 搜索命令汇总
+# NAS 第一版试跑命令说明
 
-本文档只整理 **搜索阶段** 命令（`search_channel_aware.py`）。
+本文档整理第一版试跑需要的核心命令（搜索 + 日志查看 + 结果出图）。
 
 ## 1. 环境检查（可选）
 
 ```bash
+conda activate ASE-JSCC
+```
+
+```bash
 python -c "import torch; print(torch.__version__, torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu')"
+```
+
+```bash
+python -c "from torch.utils.tensorboard import SummaryWriter; print('tensorboard writer ok')"
+```
+
+若第三条报错缺少 TensorBoard 依赖，可安装：
+
+```bash
+pip install tensorboard
 ```
 
 ## 2. 快速试跑（先验证流程）
@@ -88,13 +102,36 @@ foreach ($s in $seeds) {
 - `--max_train_batches/--max_eval_batches`：用于控时；`0` 表示不限制。
 - `--target_rate`：目标平均动态码率阈值。
 - `--lambda_rate`：超过目标码率的惩罚强度。
+- `--disable_tensorboard`：关闭 TensorBoard 记录（默认开启）。
 
 ## 10. 结果文件
 
 每次搜索会在 `runs/nas_search/<dataset>_<timestamp>/` 产出：
 
 - `search_results.jsonl`
+- `search_progress.jsonl`
 - `best_arch.json`
 - `topk_arches.json`
+- `ranked_results.json`
+- `ranked_results.csv`
+- `topk_summary.md`
+- `run_config.json`
 - `summary.json`
+- `tensorboard/`（可直接用 TensorBoard 可视化）
 
+## 11. TensorBoard 查看
+
+```bash
+tensorboard --logdir runs/nas_search --port 6006
+```
+
+浏览器打开 `http://localhost:6006`。
+
+## 12. 一键生成汇报图
+
+```bash
+LATEST=$(ls -td runs/nas_search/Soya_* | head -1)
+python scripts/nas/plot_nas_results.py --run_dir "$LATEST" --top_k 8
+```
+
+图会输出到：`$LATEST/figures/`。

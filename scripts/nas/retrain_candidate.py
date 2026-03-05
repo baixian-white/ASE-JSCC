@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+"""
+NAS 候选架构重训练脚本。
+
+用途：
+1. 读取 NAS 输出的 best_arch.json（或手工指定架构 JSON）。
+2. 在完整训练轮数下进行正式训练。
+3. 在多信道/SNR 网格上持续评估并保存最佳模型。
+4. 导出训练历史 summary.json。
+"""
+
 import argparse
 import json
 import random
@@ -29,10 +39,12 @@ from scripts.nas.searchable_model import ChannelAwareClassifier  # noqa: E402
 
 
 def parse_int_list(values: str) -> List[int]:
+    """将逗号分隔字符串解析为整数列表。"""
     return [int(v.strip()) for v in values.split(",") if v.strip()]
 
 
 def parse_str_list(values: str) -> List[str]:
+    """将逗号分隔字符串解析为字符串列表。"""
     return [v.strip() for v in values.split(",") if v.strip()]
 
 
@@ -44,6 +56,12 @@ def train_one_epoch(
     device: torch.device,
     seed: int,
 ) -> Dict[str, float]:
+    """
+    单轮训练。
+
+    每个 batch 随机采样一个 (channel_type, snr) 条件，
+    以提升模型对多信道场景的泛化能力。
+    """
     sampler = default_channel_sampler()
     rng = random.Random(seed)
     model.train()
@@ -83,6 +101,15 @@ def evaluate_grid(
     eval_channel_types: List[str],
     eval_snr_list: List[int],
 ) -> Dict[str, object]:
+    """
+    在验证集上执行“信道类型 × SNR”网格评估。
+
+    返回：
+    - mean_acc / worst_acc
+    - mean_valid_loss
+    - mean_cr / std_cr（动态码率统计）
+    - acc_map（每个网格点的准确率）
+    """
     model.eval()
     acc_map: Dict[str, float] = {}
     acc_values: List[float] = []
@@ -129,6 +156,7 @@ def evaluate_grid(
 
 
 def parse_args() -> argparse.Namespace:
+    """命令行参数定义。"""
     parser = argparse.ArgumentParser(description="Retrain one architecture from NAS outputs.")
     parser.add_argument("--arch_json", type=str, required=True, help="Path to best_arch.json or custom arch json.")
     parser.add_argument("--dataset_name", type=str, default="Soya")
@@ -157,6 +185,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """
+    重训练入口：
+    1) 加载架构
+    2) 构建数据与模型
+    3) epoch 循环训练 + 网格评估
+    4) 保存 best/final 模型与 summary
+    """
     args = parse_args()
     set_seed(args.seed)
 
@@ -226,6 +261,7 @@ def main() -> None:
         )
 
         scheduler.step(float(valid_result["mean_valid_loss"]))
+        # 以网格平均验证损失驱动 ReduceLROnPlateau。
         train_loss = float(train_metrics["train_loss"])
         train_mean_cr = float(train_metrics["train_mean_cr"])
         train_std_cr = float(train_metrics["train_std_cr"])
@@ -258,6 +294,7 @@ def main() -> None:
 
         if mean_acc > best_metric:
             best_metric = mean_acc
+            # 以 mean_acc 作为主指标保存最佳模型。
             torch.save(model.state_dict(), best_ckpt_path)
 
     final_ckpt_path = run_dir / "final_model.pth"

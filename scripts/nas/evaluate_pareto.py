@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+"""
+从 NAS 搜索结果中计算 Pareto 前沿并导出摘要。
+
+目标方向：
+- mean_acc：越大越好（maximize）
+- param_m：越小越好（minimize）
+- tx_cost：越小越好（minimize）
+- robust_gap：越小越好（minimize）
+"""
+
 import argparse
 import json
 import sys
@@ -15,9 +25,11 @@ from scripts.nas.nas_utils import resolve_path  # noqa: E402
 
 def dominates(a: Dict[str, object], b: Dict[str, object]) -> bool:
     """
-    Multi-objective dominance relation:
-    - maximize: mean_acc
-    - minimize: param_m, tx_cost, robust_gap
+    多目标支配关系判断。
+
+    a dominates b 的条件：
+    1) a 在所有目标上都“不差于” b；
+    2) a 至少在一个目标上“严格优于” b。
     """
     a_mean_acc = float(a["mean_acc"])
     b_mean_acc = float(b["mean_acc"])
@@ -44,6 +56,14 @@ def dominates(a: Dict[str, object], b: Dict[str, object]) -> bool:
 
 
 def pareto_front(rows: List[Dict[str, object]]) -> List[Dict[str, object]]:
+    """
+    计算非支配解集合（Pareto front）。
+
+    这里采用增量式构建：
+    - 候选被 front 中任意点支配 -> 丢弃
+    - 候选支配 front 中某些点 -> 删除被支配点
+    - 否则加入 front
+    """
     front: List[Dict[str, object]] = []
     for candidate in rows:
         is_dominated = False
@@ -62,6 +82,7 @@ def pareto_front(rows: List[Dict[str, object]]) -> List[Dict[str, object]]:
 
 
 def parse_args() -> argparse.Namespace:
+    """命令行参数解析。"""
     parser = argparse.ArgumentParser(description="Compute Pareto front from NAS search results.")
     parser.add_argument(
         "--results_jsonl",
@@ -75,6 +96,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """
+    主流程：
+    1) 读取 search_results.jsonl
+    2) 计算 Pareto front
+    3) 导出 JSON 与 Markdown 摘要
+    """
     args = parse_args()
     results_path = resolve_path(args.results_jsonl)
     if not results_path.exists():
