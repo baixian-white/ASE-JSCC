@@ -546,9 +546,9 @@ def _log_result_to_tensorboard(writer: "SummaryWriter", result: Dict[str, object
 def parse_args() -> argparse.Namespace:
     """搜索脚本参数定义。"""
     parser = argparse.ArgumentParser(description="Channel-aware multi-objective architecture search.")
-    parser.add_argument("--dataset_name", type=str, default="Soya")
-    parser.add_argument("--train_dir", type=str, default="data/SoyaHealthVision/train")
-    parser.add_argument("--valid_dir", type=str, default="data/SoyaHealthVision/valid")
+    parser.add_argument("--dataset_name", type=str, default="UCMerced_LandUse")
+    parser.add_argument("--train_dir", type=str, default="data/UCMerced_LandUse/UCMerced_LandUse-train")
+    parser.add_argument("--valid_dir", type=str, default="data/UCMerced_LandUse/UCMerced_LandUse-valid")
     parser.add_argument("--output_dir", type=str, default="runs/nas_search")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", type=str, default="cuda:0")

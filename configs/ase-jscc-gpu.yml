@@ -1,5 +1,4 @@
 name: ASE-JSCC
-channel_priority: strict
 channels:
   - pytorch
   - nvidia
@@ -14,7 +13,7 @@ dependencies:
   - pytorch
   - torchvision
   - torchaudio
-  - pytorch-cuda=12.4  
+  - pytorch-cuda=12.4
 
   # ===== 科学计算/可视化 =====
   - numpy

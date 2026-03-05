@@ -6,9 +6,9 @@ This guide explains how to run the current channel-aware multi-objective NAS pip
 
 ```bash
 python scripts/nas/search_channel_aware.py \
-  --dataset_name Soya \
-  --train_dir data/SoyaHealthVision/train \
-  --valid_dir data/SoyaHealthVision/valid \
+  --dataset_name UCMerced_LandUse \
+  --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
+  --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
   --output_dir runs/nas_search \
   --num_samples 20 \
   --search_epochs 2 \
@@ -41,9 +41,9 @@ Outputs:
 ```bash
 python scripts/nas/retrain_candidate.py \
   --arch_json runs/nas_search/<run_id>/best_arch.json \
-  --dataset_name Soya \
-  --train_dir data/SoyaHealthVision/train \
-  --valid_dir data/SoyaHealthVision/valid \
+  --dataset_name UCMerced_LandUse \
+  --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
+  --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
   --output_dir runs/nas_retrain \
   --epochs 120 \
   --batch_size 64

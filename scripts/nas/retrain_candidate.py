@@ -159,9 +159,9 @@ def parse_args() -> argparse.Namespace:
     """命令行参数定义。"""
     parser = argparse.ArgumentParser(description="Retrain one architecture from NAS outputs.")
     parser.add_argument("--arch_json", type=str, required=True, help="Path to best_arch.json or custom arch json.")
-    parser.add_argument("--dataset_name", type=str, default="Soya")
-    parser.add_argument("--train_dir", type=str, default="data/SoyaHealthVision/train")
-    parser.add_argument("--valid_dir", type=str, default="data/SoyaHealthVision/valid")
+    parser.add_argument("--dataset_name", type=str, default="UCMerced_LandUse")
+    parser.add_argument("--train_dir", type=str, default="data/UCMerced_LandUse/UCMerced_LandUse-train")
+    parser.add_argument("--valid_dir", type=str, default="data/UCMerced_LandUse/UCMerced_LandUse-valid")
     parser.add_argument("--output_dir", type=str, default="runs/nas_retrain")
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument("--seed", type=int, default=42)
