@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="980" viewBox="0 0 1400 980">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1400" height="980" fill="#fafafa"/>
+
+  <text x="700" y="42" text-anchor="middle" font-family="Arial" font-size="30" font-weight="bold" fill="#1a202c">Baseline vs NAS Best: Architecture Comparison</text>
+  <rect x="40" y="70" width="620" height="860" rx="16" ry="16" fill="#ffffff" stroke="#cbd5e0" stroke-width="2"/>
+  <text x="350" y="108" text-anchor="middle" font-family="Arial" font-size="24" font-weight="bold" fill="#2d3748">Baseline</text>
+  <rect x="120" y="130" width="460" height="72" rx="10" ry="10" fill="#ffffff" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="350.0" y="154" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Input</text>
+  <rect x="120" y="224" width="460" height="72" rx="10" ry="10" fill="#edf2f7" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="350.0" y="248" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">ResNet18 Stem + layer1..4</text>
+  <rect x="120" y="318" width="460" height="72" rx="10" ry="10" fill="#fffaf0" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="350.0" y="342" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">SE Block</text>
+  <text x="350.0" y="364" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">ratio=16, fixed CR</text>
+  <rect x="120" y="412" width="460" height="72" rx="10" ry="10" fill="#fffaf0" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="350.0" y="436" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">JSCC AE</text>
+  <text x="350.0" y="458" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">depth=4, kernel=3, no skip</text>
+  <rect x="120" y="506" width="460" height="72" rx="10" ry="10" fill="#f0fff4" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="350.0" y="530" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Channel Sim</text>
+  <text x="350.0" y="552" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">SNR sampled internally</text>
+  <rect x="120" y="600" width="460" height="72" rx="10" ry="10" fill="#edf2f7" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="350.0" y="624" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Head</text>
+  <text x="350.0" y="646" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">avgpool->fc</text>
+  <line x1="350.0" y1="202" x2="350.0" y2="224" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="350.0" y1="296" x2="350.0" y2="318" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="350.0" y1="390" x2="350.0" y2="412" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="350.0" y1="484" x2="350.0" y2="506" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="350.0" y1="578" x2="350.0" y2="600" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="740" y="70" width="620" height="860" rx="16" ry="16" fill="#ffffff" stroke="#cbd5e0" stroke-width="2"/>
+  <text x="1050" y="108" text-anchor="middle" font-family="Arial" font-size="24" font-weight="bold" fill="#2d3748">NAS Best (s4_r32_cr0.4_cb24_d2_k1_skip)</text>
+  <rect x="820" y="130" width="460" height="72" rx="10" ry="10" fill="#ffffff" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="1050.0" y="154" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Input</text>
+  <rect x="820" y="224" width="460" height="72" rx="10" ry="10" fill="#edf2f7" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="1050.0" y="248" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">ResNet18 Stem + layer1..4</text>
+  <rect x="820" y="318" width="460" height="72" rx="10" ry="10" fill="#fffaf0" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="1050.0" y="342" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Searchable SE</text>
+  <text x="1050.0" y="364" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">ratio=32 + channel-conditioned</text>
+  <rect x="820" y="412" width="460" height="72" rx="10" ry="10" fill="#ebf8ff" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="1050.0" y="436" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Rate Controller</text>
+  <text x="1050.0" y="458" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">dynamic per-sample CR_i</text>
+  <rect x="820" y="506" width="460" height="72" rx="10" ry="10" fill="#fffaf0" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="1050.0" y="530" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Searchable JSCC</text>
+  <text x="1050.0" y="552" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">depth=2, kernel=1, bottleneck=24</text>
+  <rect x="820" y="600" width="460" height="72" rx="10" ry="10" fill="#fef5e7" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="1050.0" y="624" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Residual Skip</text>
+  <text x="1050.0" y="646" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">enabled</text>
+  <rect x="820" y="694" width="460" height="72" rx="10" ry="10" fill="#edf2f7" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="1050.0" y="718" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Head</text>
+  <text x="1050.0" y="740" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">avgpool->fc</text>
+  <line x1="1050.0" y1="202" x2="1050.0" y2="224" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="1050.0" y1="296" x2="1050.0" y2="318" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="1050.0" y1="390" x2="1050.0" y2="412" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="1050.0" y1="484" x2="1050.0" y2="506" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="1050.0" y1="578" x2="1050.0" y2="600" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="1050.0" y1="672" x2="1050.0" y2="694" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="660" y1="290" x2="740" y2="290" stroke="#e53e3e" stroke-width="2" stroke-dasharray="6,4"/>
+  <text x="700" y="278" text-anchor="middle" font-family="Arial" font-size="12" fill="#e53e3e">SE upgraded</text>
+  <line x1="660" y1="386" x2="740" y2="386" stroke="#e53e3e" stroke-width="2" stroke-dasharray="6,4"/>
+  <text x="700" y="374" text-anchor="middle" font-family="Arial" font-size="12" fill="#e53e3e">Dynamic CR added</text>
+  <line x1="660" y1="480" x2="740" y2="480" stroke="#e53e3e" stroke-width="2" stroke-dasharray="6,4"/>
+  <text x="700" y="468" text-anchor="middle" font-family="Arial" font-size="12" fill="#e53e3e">JSCC redesigned</text>
+  <text x="700" y="964" text-anchor="middle" font-family="Arial" font-size="13" fill="#718096">Generated for report use (directly exportable to PNG).</text>
+</svg>

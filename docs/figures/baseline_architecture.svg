@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1220" viewBox="0 0 900 1220">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="900" height="1220" fill="#fafafa"/>
+
+  <text x="450" y="40" text-anchor="middle" font-family="Arial" font-size="28" font-weight="bold" fill="#1a202c">Baseline ASE-JSCC Architecture</text>
+  <rect x="150" y="70" width="600" height="90" rx="10" ry="10" fill="#ffffff" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="450.0" y="94" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Input Image</text>
+  <text x="450.0" y="116" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">B x 3 x 256 x 256</text>
+  <rect x="150" y="188" width="600" height="90" rx="10" ry="10" fill="#edf2f7" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="450.0" y="212" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">ResNet18 Stem</text>
+  <text x="450.0" y="234" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">conv1 -> bn1 -> relu -> maxpool</text>
+  <rect x="150" y="306" width="600" height="90" rx="10" ry="10" fill="#edf2f7" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="450.0" y="330" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Backbone Blocks</text>
+  <text x="450.0" y="352" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">layer1 -> layer2 -> layer3 -> layer4</text>
+  <rect x="150" y="424" width="600" height="90" rx="10" ry="10" fill="#fffaf0" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="450.0" y="448" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">SE Block</text>
+  <text x="450.0" y="470" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">ratio=16, fixed CR</text>
+  <rect x="150" y="542" width="600" height="90" rx="10" ry="10" fill="#fffaf0" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="450.0" y="566" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">JSCC Autoencoder</text>
+  <text x="450.0" y="588" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">Encoder 512->256->128->64->32</text>
+  <text x="450.0" y="606" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">Decoder 32->64->128->256->512</text>
+  <rect x="150" y="660" width="600" height="90" rx="10" ry="10" fill="#f0fff4" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="450.0" y="684" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Channel Simulator</text>
+  <text x="450.0" y="706" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">AWGN / Fading / Combined</text>
+  <text x="450.0" y="724" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">SNR sampled internally</text>
+  <rect x="150" y="778" width="600" height="90" rx="10" ry="10" fill="#edf2f7" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="450.0" y="802" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Classifier Head</text>
+  <text x="450.0" y="824" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">avgpool -> flatten -> fc</text>
+  <rect x="150" y="896" width="600" height="90" rx="10" ry="10" fill="#ffffff" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="450.0" y="920" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Output Logits</text>
+  <text x="450.0" y="942" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">num_classes</text>
+  <line x1="450.0" y1="160" x2="450.0" y2="188" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="450.0" y1="278" x2="450.0" y2="306" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="450.0" y1="396" x2="450.0" y2="424" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="450.0" y1="514" x2="450.0" y2="542" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="450.0" y1="632" x2="450.0" y2="660" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="450.0" y1="750" x2="450.0" y2="778" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="450.0" y1="868" x2="450.0" y2="896" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="20" y="560" width="110" height="80" rx="10" ry="10" fill="#ebf8ff" stroke="#2b6cb0" stroke-width="1.5"/>
+  <text x="75.0" y="584" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">channel_type</text>
+  <text x="75.0" y="606" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">from CLI</text>
+  <line x1="130" y1="600" x2="150" y2="600" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="450" y="1190" text-anchor="middle" font-family="Arial" font-size="13" fill="#718096">Source: scripts/train/ASE-JSCCtrain.py (SatelliteClassifierWithAttention)</text>
+</svg>

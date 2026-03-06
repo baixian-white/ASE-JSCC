@@ -69,6 +69,12 @@
 - 汇总 `mean_acc / worst_acc / robust_gap / mean_cr / std_cr`
 - 可用 `--max_eval_batches` 截断验证 batch 数加速
 
+mean_acc：在所有 channel_type × SNR 条件点上的平均准确率（越高越好）
+worst_acc：所有条件点里最低的准确率（最差场景表现，越高越好）
+robust_gap：性能波动幅度，计算是 max(acc) - min(acc)（越小越稳）
+mean_cr：评估过程中样本级动态压缩率 CR 的平均值（反映平均压缩/传输强度）
+std_cr：CR 的标准差（反映动态码率波动大小，越大说明自适应幅度越强）
+
 ### 3.4 多目标打分
 
 当前打分函数（分数越高越好）：
@@ -78,17 +84,15 @@ score = mean_acc
         - lambda_param * param_m
         - lambda_tx    * (tx_cost / 10000)
         - lambda_robust* robust_gap
-        - lambda_cr    * max(0, mean_cr - target_cr)
+        - lambda_rate  * max(0, mean_cr - target_rate)
 ```
-
-注：这里与代码命名保持一致，使用 `--lambda_cr` 与 `--target_cr`；旧参数 `--lambda_rate` 与 `--target_rate` 仍可兼容解析。
 
 其中：
 
 - `param_m`：参数量（百万）
 - `tx_cost`：估计传输代价
 - `robust_gap`：跨信道/SNR 性能波动（越小越稳）
-- `mean_cr` 超过 `target_cr` 时触发码率惩罚
+- `mean_cr` 超过 `target_rate` 时触发码率惩罚
 
 ---
 

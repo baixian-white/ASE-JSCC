@@ -201,6 +201,28 @@ x ──> Encoder ──> Channel ──> Decoder ──> (+) ──> out
 2. 动态样本级压缩率（Dynamic per-sample CR）
 - 每个样本可预测不同 CR，而不是整批共享一个固定 CR。
 
+2.1 动态样本级压缩率的具体实现（代码级）
+- 入口位置：`SearchableSEBlock.forward(...)`（`scripts/nas/searchable_model.py`）。
+- 输入来源：
+  - `semantic_vec`：由当前特征图做 GAP 得到，形状 `(B, C_se)`；
+  - `cond_vec`：由 `channel_type + snr_db` 编码得到，形状 `(B, 32)`。
+- `RateController` 计算每样本压缩率的步骤：
+  - 拼接输入：`z = concat([semantic_vec, cond_vec], dim=1)`，形状 `(B, C_se+32)`；
+  - 经过 MLP（Linear-ReLU-Linear-ReLU-Linear-Sigmoid）得到 `raw ∈ (0,1)`，形状 `(B,)`；
+  - 映射到动态范围：`dynamic_cr_i = min_cr + (max_cr - min_cr) * raw_i`；
+  - 与架构基准 `base_cr(=arch.cr)` 融合：
+    - `cr_i = (1 - alpha) * base_cr + alpha * dynamic_cr_i`
+  - 最后裁剪：`cr_i = clamp(cr_i, min_cr, max_cr)`。
+- 关闭动态码率时（`--disable_dynamic_rate`）：
+  - 不走预测分支，直接令所有样本 `cr_i = base_cr`（整批固定）。
+- `cr_i` 如何作用到通道筛选：
+  - 每个样本计算 `k_i = round(cr_i * C_se)`，并限制在 `[1, C_se]`；
+  - 按 `weights` 做样本级 top-k，得到二值掩码 `mask_i`；
+  - `mask_i` reshape 为 `(B, C_se, 1, 1)` 后与特征逐通道相乘。
+- 训练/评估统计如何记录：
+  - 每个 batch 会记录 `mean_cr / std_cr / min_cr / max_cr` 到 `last_forward_stats`；
+  - 搜索阶段的 `mean_cr`、`std_cr` 即由这些 batch 统计聚合得到。
+
 这两点让模型更贴近“信道感知通信”场景。
 
 ---

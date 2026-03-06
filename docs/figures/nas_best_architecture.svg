@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="1360" viewBox="0 0 1040 1360">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1040" height="1360" fill="#fafafa"/>
+
+  <text x="520" y="40" text-anchor="middle" font-family="Arial" font-size="28" font-weight="bold" fill="#1a202c">NAS Best Architecture (UCMerced_LandUse_20260305_215121)</text>
+  <text x="520" y="68" text-anchor="middle" font-family="Arial" font-size="14" fill="#4a5568">s4_r32_cr0.4_cb24_d2_k1_skip</text>
+  <rect x="220" y="90" width="600" height="90" rx="10" ry="10" fill="#ffffff" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="520.0" y="114" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Input Image</text>
+  <text x="520.0" y="136" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">B x 3 x 256 x 256</text>
+  <rect x="220" y="208" width="600" height="90" rx="10" ry="10" fill="#edf2f7" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="520.0" y="232" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">ResNet18 Stem</text>
+  <text x="520.0" y="254" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">conv1 -> bn1 -> relu -> maxpool</text>
+  <rect x="220" y="326" width="600" height="90" rx="10" ry="10" fill="#edf2f7" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="520.0" y="350" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Backbone Blocks</text>
+  <text x="520.0" y="372" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">layer1 -> layer2 -> layer3 -> layer4</text>
+  <rect x="220" y="444" width="600" height="90" rx="10" ry="10" fill="#fffaf0" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="520.0" y="468" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Searchable SE Block</text>
+  <text x="520.0" y="490" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">se_ratio=32, base_cr=0.4</text>
+  <rect x="220" y="562" width="600" height="90" rx="10" ry="10" fill="#fffaf0" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="520.0" y="586" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Searchable JSCC</text>
+  <text x="520.0" y="608" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">depth=2, kernel=1, bottleneck=24</text>
+  <rect x="220" y="680" width="600" height="90" rx="10" ry="10" fill="#edf2f7" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="520.0" y="704" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Classifier Head</text>
+  <text x="520.0" y="726" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">avgpool -> flatten -> fc</text>
+  <rect x="220" y="798" width="600" height="90" rx="10" ry="10" fill="#ffffff" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="520.0" y="822" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Output Logits</text>
+  <text x="520.0" y="844" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">num_classes</text>
+  <line x1="520.0" y1="180" x2="520.0" y2="208" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="520.0" y1="298" x2="520.0" y2="326" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="520.0" y1="416" x2="520.0" y2="444" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="520.0" y1="534" x2="520.0" y2="562" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="520.0" y1="652" x2="520.0" y2="680" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="520.0" y1="770" x2="520.0" y2="798" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="20" y="430" width="170" height="80" rx="10" ry="10" fill="#ebf8ff" stroke="#2b6cb0" stroke-width="1.5"/>
+  <text x="105.0" y="454" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Channel + SNR</text>
+  <text x="105.0" y="476" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">channel_type, snr_db</text>
+  <rect x="20" y="530" width="170" height="86" rx="10" ry="10" fill="#ebf8ff" stroke="#2b6cb0" stroke-width="1.5"/>
+  <text x="105.0" y="554" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Condition Encoder</text>
+  <text x="105.0" y="576" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">embedding + snr MLP</text>
+  <rect x="20" y="640" width="170" height="92" rx="10" ry="10" fill="#ebf8ff" stroke="#2b6cb0" stroke-width="1.5"/>
+  <text x="105.0" y="664" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Rate Controller</text>
+  <text x="105.0" y="686" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">predict per-sample CR_i</text>
+  <text x="105.0" y="704" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">[min=0.3, max=1.0, alpha=0.7]</text>
+  <line x1="105" y1="510" x2="105" y2="530" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="105" y1="616" x2="105" y2="640" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="190" y1="573" x2="220" y2="489" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="190" y1="686" x2="220" y2="489" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="850" y="610" width="170" height="96" rx="10" ry="10" fill="#f0fff4" stroke="#2f855a" stroke-width="1.5"/>
+  <text x="935.0" y="634" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Channel Simulator</text>
+  <text x="935.0" y="656" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">AWGN / Fading / Combined</text>
+  <line x1="820" y1="607" x2="850" y2="658" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="850" y="760" width="170" height="72" rx="10" ry="10" fill="#fef5e7" stroke="#c05621" stroke-width="1.5"/>
+  <text x="935.0" y="784" text-anchor="middle" font-family="Arial" font-size="16" fill="#1a202c">Residual Skip</text>
+  <text x="935.0" y="806" text-anchor="middle" font-family="Arial" font-size="13" fill="#4a5568">use_skip = true</text>
+  <line x1="820" y1="625" x2="850" y2="796" stroke="#333" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="520" y="1330" text-anchor="middle" font-family="Arial" font-size="13" fill="#718096">Source: scripts/nas/searchable_model.py (ChannelAwareClassifier)</text>
+</svg>
