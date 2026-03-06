@@ -12,6 +12,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pathlib import Path
 import math
 import os
+from typing import Dict
 
 def get_project_root() -> Path:
     current = Path(__file__).resolve().parent
@@ -37,20 +38,72 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # Path("AID_150_combine_0.8/checkpoint").mkdir(parents=True, exist_ok=True)
 # Path("AID_150_combine_0.8/logs/ResNet18").mkdir(parents=True, exist_ok=True)
 
-def get_exp_dirs(num_epochs, channel_type, cr, dataset_name="Soya"):
+def get_exp_dirs(
+    num_epochs,
+    channel_type,
+    cr,
+    dataset_name="Soya",
+    output_dir="runs/original_train",
+    run_name=None,
+):
     channel_tag = {
         "AWGN": "awgn",
         "Fading": "fading",
         "Combined_channel": "combine",
     }[channel_type]
 
-    base_dir = PROJECT_ROOT / f"{dataset_name}_{num_epochs}_{channel_tag}_{cr}"
+    dataset_tag = dataset_name.replace(" ", "_")
+    output_root = resolve_path(output_dir)
+    if run_name:
+        exp_name = run_name
+    else:
+        exp_name = f"{dataset_tag}_{num_epochs}_{channel_tag}_{cr}_{time.strftime('%Y%m%d_%H%M%S')}"
+
+    base_dir = output_root / exp_name
     ckpt_dir = base_dir / "checkpoint"
-    log_dir = base_dir / "logs" / "ResNet18"
+    log_dir = base_dir / "tensorboard"
 
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     log_dir.mkdir(parents=True, exist_ok=True)
-    return ckpt_dir, log_dir
+    return base_dir, ckpt_dir, log_dir
+
+
+def write_run_summary_md(summary_path: Path, payload: Dict[str, object]) -> None:
+    lines = [
+        "# Original Model Training Summary",
+        "",
+        "## Run",
+        f"- task: `{payload['task']}`",
+        f"- run_dir: `{payload['run_dir']}`",
+        f"- start_time: `{payload['start_time']}`",
+        f"- end_time: `{payload['end_time']}`",
+        "",
+        "## Data & Config",
+        f"- dataset_name: `{payload['dataset_name']}`",
+        f"- train_dir: `{payload['train_dir']}`",
+        f"- valid_dir: `{payload['valid_dir']}`",
+        f"- num_classes: `{payload['num_classes']}`",
+        f"- channel_type: `{payload['channel_type']}`",
+        f"- cr: `{payload['cr']}`",
+        f"- num_epochs: `{payload['num_epochs']}`",
+        f"- batch_size: `{payload['batch_size']}`",
+        f"- num_workers: `{payload['num_workers']}`",
+        f"- device: `{payload['device']}`",
+        "",
+        "## Outputs",
+        f"- best_checkpoint: `{payload['best_checkpoint']}`",
+        f"- final_checkpoint: `{payload['final_checkpoint']}`",
+        f"- tensorboard_dir: `{payload['tensorboard_dir']}`",
+        f"- txt_log: `{payload['txt_log']}`",
+        "",
+        "## Metrics",
+        f"- final_valid_accuracy: `{payload['final_valid_accuracy']:.6f}`",
+        f"- final_valid_loss: `{payload['final_valid_loss']:.6f}`",
+        f"- best_valid_loss: `{payload['best_valid_loss']:.6f}`",
+        f"- best_epoch: `{payload['best_epoch']}`",
+        "",
+    ]
+    summary_path.write_text("\n".join(lines), encoding="utf-8")
 
 train_transform = transforms.Compose([
     transforms.Resize((256, 256)),
@@ -317,9 +370,31 @@ class SatelliteClassifierWithAttention(nn.Module):
 
         return x
 
-def continue_train(cr, num_epochs, pre_checkpoint, channel_type, train_loader, valid_loader, num_classes, dataset_name):
+def continue_train(
+    cr,
+    num_epochs,
+    pre_checkpoint,
+    channel_type,
+    train_loader,
+    valid_loader,
+    num_classes,
+    dataset_name,
+    train_dir,
+    valid_dir,
+    batch_size,
+    num_workers,
+    output_dir,
+    run_name=None,
+):
     dataset_tag = dataset_name.replace(" ", "_")
-    ckpt_dir, log_dir = get_exp_dirs(num_epochs, channel_type, cr, dataset_name=dataset_tag)
+    run_dir, ckpt_dir, log_dir = get_exp_dirs(
+        num_epochs,
+        channel_type,
+        cr,
+        dataset_name=dataset_tag,
+        output_dir=output_dir,
+        run_name=run_name,
+    )
 
     start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
     model = SatelliteClassifierWithAttention(num_classes).to(device)
@@ -336,9 +411,18 @@ def continue_train(cr, num_epochs, pre_checkpoint, channel_type, train_loader, v
     model.load_state_dict(model_dict)
 
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)
+    try:
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)
+    except TypeError:
+        # Compatible with torch versions whose ReduceLROnPlateau has no `verbose` arg.
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
     criterion = nn.CrossEntropyLoss()
     writer = SummaryWriter(str(log_dir))
+    best_valid_loss = float('inf')
+    best_epoch = 0
+    accuracy = 0.0
+    avg_valid_loss = 0.0
+    best_model_path = ckpt_dir / f'best_classifier_attention_auto_{dataset_tag}_{channel_type}_ResNet18_up_{num_epochs}epoch_{cr}.pth'
 
     for epoch in range(num_epochs):
         model.train()
@@ -381,6 +465,10 @@ def continue_train(cr, num_epochs, pre_checkpoint, channel_type, train_loader, v
         print(f'Valid Accuracy: {accuracy}')
         writer.add_scalar('Valid Loss', avg_valid_loss, epoch + 1)
         writer.add_scalar('Valid Accuracy', accuracy, epoch + 1)
+        if avg_valid_loss < best_valid_loss:
+            best_valid_loss = avg_valid_loss
+            best_epoch = epoch + 1
+            torch.save(model.state_dict(), best_model_path)
 
     save_path = ckpt_dir / f'classifier_attention_auto_{dataset_tag}_{channel_type}_ResNet18_up_{num_epochs}epoch_{cr}.pth'
     torch.save(model.state_dict(), save_path)
@@ -398,18 +486,82 @@ def continue_train(cr, num_epochs, pre_checkpoint, channel_type, train_loader, v
         file.write(f'Num Epochs: {num_epochs}\n')
         file.write(f'Valid Accuracy: {accuracy}\n')
         file.write('train over!\n')
-def train(cr, num_epochs, channel_type, train_loader, valid_loader, num_classes, dataset_name):
+    summary_md = run_dir / "run_summary.md"
+    write_run_summary_md(
+        summary_md,
+        {
+            "task": "continue",
+            "run_dir": str(run_dir),
+            "start_time": start_time,
+            "end_time": current_time,
+            "dataset_name": dataset_name,
+            "train_dir": str(train_dir),
+            "valid_dir": str(valid_dir),
+            "num_classes": num_classes,
+            "channel_type": channel_type,
+            "cr": cr,
+            "num_epochs": num_epochs,
+            "batch_size": batch_size,
+            "num_workers": num_workers,
+            "device": str(device),
+            "best_checkpoint": str(best_model_path),
+            "final_checkpoint": str(save_path),
+            "tensorboard_dir": str(log_dir),
+            "txt_log": str(log_path),
+            "final_valid_accuracy": float(accuracy),
+            "final_valid_loss": float(avg_valid_loss),
+            "best_valid_loss": float(best_valid_loss if best_valid_loss < float('inf') else avg_valid_loss),
+            "best_epoch": int(best_epoch),
+        },
+    )
+
+    return {
+        "run_dir": run_dir,
+        "summary_md": summary_md,
+        "best_checkpoint": best_model_path,
+        "final_checkpoint": save_path,
+    }
+def train(
+    cr,
+    num_epochs,
+    channel_type,
+    train_loader,
+    valid_loader,
+    num_classes,
+    dataset_name,
+    train_dir,
+    valid_dir,
+    batch_size,
+    num_workers,
+    output_dir,
+    run_name=None,
+):
     dataset_tag = dataset_name.replace(" ", "_")
-    ckpt_dir, log_dir = get_exp_dirs(num_epochs, channel_type, cr, dataset_name=dataset_tag)
+    run_dir, ckpt_dir, log_dir = get_exp_dirs(
+        num_epochs,
+        channel_type,
+        cr,
+        dataset_name=dataset_tag,
+        output_dir=output_dir,
+        run_name=run_name,
+    )
     start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
 
     model = SatelliteClassifierWithAttention(num_classes).to(device)
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
     optimizer = optim.Adam(model.parameters(), lr=3e-4, weight_decay=1e-4)
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)
+    try:
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)
+    except TypeError:
+        # Compatible with torch versions whose ReduceLROnPlateau has no `verbose` arg.
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
 
     writer = SummaryWriter(str(log_dir))
     best_valid_loss = float('inf')
+    best_epoch = 0
+    accuracy = 0.0
+    avg_valid_loss = 0.0
+    best_model_path = ckpt_dir / f'best_classifier_attention_auto_{dataset_tag}_{channel_type}_ResNet18_{num_epochs}epoch_{cr}.pth'
 
     for epoch in range(num_epochs):
         model.train()
@@ -456,7 +608,7 @@ def train(cr, num_epochs, channel_type, train_loader, valid_loader, num_classes,
 
         if avg_valid_loss < best_valid_loss:
             best_valid_loss = avg_valid_loss
-            best_model_path = ckpt_dir / f'best_classifier_attention_auto_{dataset_tag}_{channel_type}_ResNet18_{num_epochs}epoch_{cr}.pth'
+            best_epoch = epoch + 1
             torch.save(model.state_dict(), best_model_path)
             print(f'>>> New best model saved: {best_model_path} (valid_loss={best_valid_loss:.6f})')
 
@@ -480,7 +632,55 @@ def train(cr, num_epochs, channel_type, train_loader, valid_loader, num_classes,
         file.write(f'Num Epochs: {num_epochs}\n')
         file.write(f'Valid Accuracy: {accuracy}\n')
         file.write('train over!\n')
-def main(task, cr, num_epochs, pre_checkpoint, channel_type, dataset_name, train_dir, valid_dir, batch_size, num_workers):
+    summary_md = run_dir / "run_summary.md"
+    write_run_summary_md(
+        summary_md,
+        {
+            "task": "train",
+            "run_dir": str(run_dir),
+            "start_time": start_time,
+            "end_time": current_time,
+            "dataset_name": dataset_name,
+            "train_dir": str(train_dir),
+            "valid_dir": str(valid_dir),
+            "num_classes": num_classes,
+            "channel_type": channel_type,
+            "cr": cr,
+            "num_epochs": num_epochs,
+            "batch_size": batch_size,
+            "num_workers": num_workers,
+            "device": str(device),
+            "best_checkpoint": str(best_model_path),
+            "final_checkpoint": str(save_path),
+            "tensorboard_dir": str(log_dir),
+            "txt_log": str(log_path),
+            "final_valid_accuracy": float(accuracy),
+            "final_valid_loss": float(avg_valid_loss),
+            "best_valid_loss": float(best_valid_loss if best_valid_loss < float('inf') else avg_valid_loss),
+            "best_epoch": int(best_epoch),
+        },
+    )
+
+    return {
+        "run_dir": run_dir,
+        "summary_md": summary_md,
+        "best_checkpoint": best_model_path,
+        "final_checkpoint": save_path,
+    }
+def main(
+    task,
+    cr,
+    num_epochs,
+    pre_checkpoint,
+    channel_type,
+    dataset_name,
+    train_dir,
+    valid_dir,
+    batch_size,
+    num_workers,
+    output_dir,
+    run_name,
+):
     train_dir_path = resolve_path(train_dir)
     valid_dir_path = resolve_path(valid_dir)
 
@@ -501,10 +701,11 @@ def main(task, cr, num_epochs, pre_checkpoint, channel_type, dataset_name, train
     print(f"Train dir: {train_dir_path}")
     print(f"Valid dir: {valid_dir_path}")
     print(f"Num classes: {num_classes}")
+    print(f"Output root: {resolve_path(output_dir)}")
 
     if task == 'continue':
         print("continue_train start!")
-        continue_train(
+        result = continue_train(
             cr=cr,
             num_epochs=num_epochs,
             pre_checkpoint=pre_checkpoint,
@@ -513,11 +714,17 @@ def main(task, cr, num_epochs, pre_checkpoint, channel_type, dataset_name, train
             valid_loader=valid_loader,
             num_classes=num_classes,
             dataset_name=dataset_name,
+            train_dir=train_dir_path,
+            valid_dir=valid_dir_path,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            output_dir=output_dir,
+            run_name=run_name,
         )
         print("continue_train over!")
     else:
         print("train start!")
-        train(
+        result = train(
             cr=cr,
             num_epochs=num_epochs,
             channel_type=channel_type,
@@ -525,8 +732,19 @@ def main(task, cr, num_epochs, pre_checkpoint, channel_type, dataset_name, train
             valid_loader=valid_loader,
             num_classes=num_classes,
             dataset_name=dataset_name,
+            train_dir=train_dir_path,
+            valid_dir=valid_dir_path,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            output_dir=output_dir,
+            run_name=run_name,
         )
         print("train over!")
+
+    print(f"Run dir: {result['run_dir']}")
+    print(f"Summary md: {result['summary_md']}")
+    print(f"Best checkpoint: {result['best_checkpoint']}")
+    print(f"Final checkpoint: {result['final_checkpoint']}")
 
 
 if __name__ == "__main__":
@@ -541,6 +759,8 @@ if __name__ == "__main__":
     parser.add_argument('--valid_dir', type=str, default='data/SoyaHealthVision/valid', help='ImageFolder validation directory.')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size for training and validation loaders.')
     parser.add_argument('--num_workers', type=int, default=0, help='Number of dataloader workers.')
+    parser.add_argument('--output_dir', type=str, default='runs/original_train', help='Output root directory for original-model runs.')
+    parser.add_argument('--run_name', type=str, default='', help='Optional custom run folder name under output_dir.')
     args = parser.parse_args()
 
     main(
@@ -554,5 +774,7 @@ if __name__ == "__main__":
         args.valid_dir,
         args.batch_size,
         args.num_workers,
+        args.output_dir,
+        args.run_name.strip() if isinstance(args.run_name, str) else "",
     )
 

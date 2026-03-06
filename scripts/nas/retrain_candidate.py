@@ -22,6 +22,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+try:
+    from torch.utils.tensorboard import SummaryWriter
+except Exception:  # pragma: no cover - optional dependency
+    SummaryWriter = None
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
@@ -116,6 +120,7 @@ def evaluate_grid(
     criterion = nn.CrossEntropyLoss()
     valid_loss_values: List[float] = []
     cr_values: List[float] = []
+    condition_rows: List[Dict[str, object]] = []
 
     with torch.no_grad():
         for channel_type in eval_channel_types:
@@ -138,6 +143,15 @@ def evaluate_grid(
                 acc_map[f"{channel_type}@{snr}dB"] = acc
                 acc_values.append(acc)
                 valid_loss_values.append(avg_loss)
+                condition_rows.append(
+                    {
+                        "channel_type": str(channel_type),
+                        "snr_db": int(snr),
+                        "acc": float(acc),
+                        "correct": int(correct),
+                        "total": int(total),
+                    }
+                )
 
     mean_cr = sum(cr_values) / max(len(cr_values), 1) if cr_values else 0.0
     std_cr = (
@@ -145,6 +159,21 @@ def evaluate_grid(
         if len(cr_values) > 1
         else 0.0
     )
+    per_channel_mean_acc = {
+        channel_type: float(
+            sum(row["acc"] for row in condition_rows if row["channel_type"] == channel_type)
+            / max(1, sum(1 for row in condition_rows if row["channel_type"] == channel_type))
+        )
+        for channel_type in eval_channel_types
+    }
+    per_snr_mean_acc = {
+        f"{snr}dB": float(
+            sum(row["acc"] for row in condition_rows if int(row["snr_db"]) == int(snr))
+            / max(1, sum(1 for row in condition_rows if int(row["snr_db"]) == int(snr)))
+        )
+        for snr in eval_snr_list
+    }
+
     return {
         "mean_acc": sum(acc_values) / max(len(acc_values), 1),
         "worst_acc": min(acc_values) if acc_values else 0.0,
@@ -152,7 +181,39 @@ def evaluate_grid(
         "mean_cr": mean_cr,
         "std_cr": std_cr,
         "acc_map": acc_map,
+        "condition_rows": condition_rows,
+        "per_channel_mean_acc": per_channel_mean_acc,
+        "per_snr_mean_acc": per_snr_mean_acc,
     }
+
+
+def _log_epoch_to_tensorboard(
+    writer: "SummaryWriter",
+    epoch: int,
+    train_metrics: Dict[str, float],
+    valid_result: Dict[str, object],
+    current_lr: float,
+    best_metric: float,
+) -> None:
+    writer.add_scalar("train/loss", float(train_metrics["train_loss"]), epoch)
+    writer.add_scalar("train/mean_cr", float(train_metrics["train_mean_cr"]), epoch)
+    writer.add_scalar("train/std_cr", float(train_metrics["train_std_cr"]), epoch)
+
+    mean_acc = float(valid_result["mean_acc"])
+    worst_acc = float(valid_result["worst_acc"])
+    writer.add_scalar("valid/mean_loss", float(valid_result["mean_valid_loss"]), epoch)
+    writer.add_scalar("valid/mean_acc", mean_acc, epoch)
+    writer.add_scalar("valid/worst_acc", worst_acc, epoch)
+    writer.add_scalar("valid/robust_gap", mean_acc - worst_acc, epoch)
+    writer.add_scalar("valid/mean_cr", float(valid_result["mean_cr"]), epoch)
+    writer.add_scalar("valid/std_cr", float(valid_result["std_cr"]), epoch)
+    writer.add_scalar("optim/lr", float(current_lr), epoch)
+    writer.add_scalar("best/mean_acc_so_far", float(best_metric), epoch)
+
+    for channel_type, acc in valid_result.get("per_channel_mean_acc", {}).items():
+        writer.add_scalar(f"valid/channel_acc/{channel_type}", float(acc), epoch)
+    for snr_tag, acc in valid_result.get("per_snr_mean_acc", {}).items():
+        writer.add_scalar(f"valid/snr_acc/{snr_tag}", float(acc), epoch)
 
 
 def parse_args() -> argparse.Namespace:
@@ -181,6 +242,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max_dynamic_cr", type=float, default=1.0)
     parser.add_argument("--rate_blend_alpha", type=float, default=0.7)
     parser.add_argument("--disable_pretrained_backbone", action="store_true")
+    parser.add_argument("--disable_tensorboard", action="store_true")
     return parser.parse_args()
 
 
@@ -234,10 +296,39 @@ def main() -> None:
 
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.1, patience=5, verbose=True)
+    try:
+        scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.1, patience=5, verbose=True)
+    except TypeError:
+        # Compatible with torch versions whose ReduceLROnPlateau has no `verbose` arg.
+        scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.1, patience=5)
 
     eval_channel_types = parse_str_list(args.eval_channel_types)
     eval_snr_list = parse_int_list(args.eval_snr_list)
+    tensorboard_dir = run_dir / "tensorboard"
+    writer = None
+    if not args.disable_tensorboard:
+        if SummaryWriter is None:
+            print("Warning: tensorboard is not available, skip SummaryWriter logging.")
+        else:
+            writer = SummaryWriter(str(tensorboard_dir))
+            writer.add_text("run/arch", json.dumps(arch.to_dict(), ensure_ascii=False, indent=2))
+            writer.add_text(
+                "run/config",
+                json.dumps(
+                    {
+                        "dataset_name": args.dataset_name,
+                        "device": str(device),
+                        "epochs": int(args.epochs),
+                        "batch_size": int(args.batch_size),
+                        "eval_channel_types": eval_channel_types,
+                        "eval_snr_list": eval_snr_list,
+                        "dynamic_rate": not args.disable_dynamic_rate,
+                        "channel_condition": not args.disable_channel_condition,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+            )
 
     history: List[Dict[str, object]] = []
     best_metric = -1.0
@@ -277,6 +368,8 @@ def main() -> None:
             "mean_valid_loss": valid_result["mean_valid_loss"],
             "mean_acc": mean_acc,
             "worst_acc": worst_acc,
+            "per_channel_mean_acc": valid_result["per_channel_mean_acc"],
+            "per_snr_mean_acc": valid_result["per_snr_mean_acc"],
             "train_mean_cr": train_mean_cr,
             "train_std_cr": train_std_cr,
             "valid_mean_cr": valid_mean_cr,
@@ -297,6 +390,16 @@ def main() -> None:
             # 以 mean_acc 作为主指标保存最佳模型。
             torch.save(model.state_dict(), best_ckpt_path)
 
+        if writer is not None:
+            _log_epoch_to_tensorboard(
+                writer=writer,
+                epoch=epoch + 1,
+                train_metrics=train_metrics,
+                valid_result=valid_result,
+                current_lr=current_lr,
+                best_metric=best_metric,
+            )
+
     final_ckpt_path = run_dir / "final_model.pth"
     torch.save(model.state_dict(), final_ckpt_path)
 
@@ -314,9 +417,16 @@ def main() -> None:
         "best_ckpt": str(best_ckpt_path),
         "final_ckpt": str(final_ckpt_path),
         "epochs": args.epochs,
+        "tensorboard": {
+            "enabled": bool(writer is not None),
+            "log_dir": str(tensorboard_dir),
+        },
         "history": history,
     }
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    if writer is not None:
+        writer.add_scalar("best/final_mean_acc", float(best_metric), args.epochs)
+        writer.close()
     print(f"Retrain complete. Best checkpoint: {best_ckpt_path}")
 
 

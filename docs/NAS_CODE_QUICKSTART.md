@@ -51,6 +51,10 @@ python scripts/nas/retrain_candidate.py \
 
 Optional dynamic-selector controls are the same as search.
 
+For a full retrain workflow, complete parameter reference, and scenario-based command templates, see:
+
+- `docs/NAS_FULL_RETRAIN_GUIDE.md`
+
 Outputs:
 
 - `best_model.pth`: best checkpoint by mean validation accuracy.
