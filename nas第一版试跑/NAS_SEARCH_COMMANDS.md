@@ -31,13 +31,13 @@ python scripts/nas/search_channel_aware.py --dataset_name UCMerced_LandUse --tra
 ## 3. 推荐正式搜索（默认优先）
 
 ```bash
-python scripts/nas/search_channel_aware.py --dataset_name UCMerced_LandUse --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid --output_dir runs/nas_search --device cuda:0 --image_size 256 --batch_size 80 --num_workers 6 --num_samples 36 --search_epochs 3 --top_k 8 --lambda_param 0.01 --lambda_tx 0.01 --lambda_robust 0.2 --lambda_rate 0.2 --target_rate 0.7 --min_dynamic_cr 0.3 --max_dynamic_cr 1.0 --rate_blend_alpha 0.7
+python scripts/nas/search_channel_aware.py --dataset_name UCMerced_LandUse --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid --output_dir runs/nas_search --device cuda:0 --image_size 256 --batch_size 80 --num_workers 6 --num_samples 36 --search_epochs 3 --top_k 8 --lambda_param 0.01 --lambda_tx 0.01 --lambda_robust 0.2 --lambda_cr 0.2 --target_cr 0.7 --min_dynamic_cr 0.3 --max_dynamic_cr 1.0 --rate_blend_alpha 0.7
 ```
 
 ## 4. 过夜强搜索（算力允许时）
 
 ```bash
-python scripts/nas/search_channel_aware.py --dataset_name UCMerced_LandUse --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid --output_dir runs/nas_search --device cuda:0 --image_size 256 --batch_size 96 --num_workers 8 --num_samples 80 --search_epochs 4 --top_k 10 --lambda_param 0.01 --lambda_tx 0.01 --lambda_robust 0.2 --lambda_rate 0.2 --target_rate 0.7 --min_dynamic_cr 0.3 --max_dynamic_cr 1.0 --rate_blend_alpha 0.7
+python scripts/nas/search_channel_aware.py --dataset_name UCMerced_LandUse --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid --output_dir runs/nas_search --device cuda:0 --image_size 256 --batch_size 96 --num_workers 8 --num_samples 80 --search_epochs 4 --top_k 10 --lambda_param 0.01 --lambda_tx 0.01 --lambda_robust 0.2 --lambda_cr 0.2 --target_cr 0.7 --min_dynamic_cr 0.3 --max_dynamic_cr 1.0 --rate_blend_alpha 0.7
 ```
 
 ## 5. 低显存保守搜索（OOM 时使用）
@@ -71,7 +71,7 @@ python scripts/nas/search_channel_aware.py --dataset_name UCMerced_LandUse --tra
 ## 7.1 更强调通信预算（更省传输）
 
 ```bash
-python scripts/nas/search_channel_aware.py --dataset_name UCMerced_LandUse --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid --output_dir runs/nas_search --device cuda:0 --batch_size 80 --num_workers 6 --num_samples 36 --search_epochs 3 --top_k 8 --lambda_tx 0.03 --lambda_rate 0.4 --target_rate 0.6
+python scripts/nas/search_channel_aware.py --dataset_name UCMerced_LandUse --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid --output_dir runs/nas_search --device cuda:0 --batch_size 80 --num_workers 6 --num_samples 36 --search_epochs 3 --top_k 8 --lambda_tx 0.03 --lambda_cr 0.4 --target_cr 0.6
 ```
 
 ## 7.2 更强调鲁棒性（跨 SNR 稳定）
@@ -83,7 +83,7 @@ python scripts/nas/search_channel_aware.py --dataset_name UCMerced_LandUse --tra
 ## 7.3 更强调精度（弱化开销惩罚）
 
 ```bash
-python scripts/nas/search_channel_aware.py --dataset_name UCMerced_LandUse --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid --output_dir runs/nas_search --device cuda:0 --batch_size 80 --num_workers 6 --num_samples 36 --search_epochs 3 --top_k 8 --lambda_param 0.005 --lambda_tx 0.005 --lambda_rate 0.1
+python scripts/nas/search_channel_aware.py --dataset_name UCMerced_LandUse --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid --output_dir runs/nas_search --device cuda:0 --batch_size 80 --num_workers 6 --num_samples 36 --search_epochs 3 --top_k 8 --lambda_param 0.005 --lambda_tx 0.005 --lambda_cr 0.1
 ```
 
 ## 8. 多随机种子批量搜索（PowerShell）
@@ -100,8 +100,8 @@ foreach ($s in $seeds) {
 - `--num_samples`：采样架构数量，越大越慢。
 - `--search_epochs`：每个架构的短训练轮数，越大越准但更慢。
 - `--max_train_batches/--max_eval_batches`：用于控时；`0` 表示不限制。
-- `--target_rate`：目标平均动态码率阈值。
-- `--lambda_rate`：超过目标码率的惩罚强度。
+- `--target_cr`：目标平均动态压缩率阈值。
+- `--lambda_cr`：超过目标压缩率阈值的惩罚强度。
 - `--disable_tensorboard`：关闭 TensorBoard 记录（默认开启）。
 
 ## 10. 结果文件

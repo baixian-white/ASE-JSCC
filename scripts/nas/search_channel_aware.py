@@ -240,8 +240,8 @@ def score_architecture(
     lambda_param: float,
     lambda_tx: float,
     lambda_robust: float,
-    lambda_rate: float,
-    target_rate: float,
+    lambda_cr: float,
+    target_cr: float,
 ) -> float:
     """
     多目标打分函数（单标量）。
@@ -251,17 +251,17 @@ def score_architecture(
             - λ_param * param_m
             - λ_tx * tx_norm
             - λ_robust * robust_gap
-            - λ_rate * max(0, mean_cr - target_rate)
+            - λ_cr * max(0, mean_cr - target_cr)
     """
     # 将 tx_cost 缩放到和参数量相近的量级，避免单项主导。
     tx_norm = tx_cost / 10_000.0
-    rate_violation = max(0.0, mean_cr - target_rate)
+    cr_violation = max(0.0, mean_cr - target_cr)
     return (
         mean_acc
         - lambda_param * param_m
         - lambda_tx * tx_norm
         - lambda_robust * robust_gap_val
-        - lambda_rate * rate_violation
+        - lambda_cr * cr_violation
     )
 
 
@@ -338,11 +338,11 @@ def search_once(
         lambda_param=args.lambda_param,
         lambda_tx=args.lambda_tx,
         lambda_robust=args.lambda_robust,
-        lambda_rate=args.lambda_rate,
-        target_rate=args.target_rate,
+        lambda_cr=args.lambda_cr,
+        target_cr=args.target_cr,
     )
     tx_norm = tx_cost / 10_000.0
-    rate_violation = max(0.0, float(eval_result["mean_cr"]) - args.target_rate)
+    cr_violation = max(0.0, float(eval_result["mean_cr"]) - args.target_cr)
 
     peak_gpu_mem_mb = None
     if device.type == "cuda":
@@ -372,8 +372,11 @@ def search_once(
             "param_penalty": float(-args.lambda_param * param_m),
             "tx_penalty": float(-args.lambda_tx * tx_norm),
             "robust_penalty": float(-args.lambda_robust * float(eval_result["robust_gap"])),
-            "rate_penalty": float(-args.lambda_rate * rate_violation),
-            "rate_violation": float(rate_violation),
+            "cr_penalty": float(-args.lambda_cr * cr_violation),
+            "cr_violation": float(cr_violation),
+            # Backward-compatible aliases for older analysis code.
+            "rate_penalty": float(-args.lambda_cr * cr_violation),
+            "rate_violation": float(cr_violation),
             "tx_norm": float(tx_norm),
         },
         "timing": {
@@ -570,8 +573,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lambda_param", type=float, default=0.01)
     parser.add_argument("--lambda_tx", type=float, default=0.01)
     parser.add_argument("--lambda_robust", type=float, default=0.2)
-    parser.add_argument("--lambda_rate", type=float, default=0.2)
-    parser.add_argument("--target_rate", type=float, default=0.7)
+    parser.add_argument("--lambda_cr", type=float, default=0.2)
+    parser.add_argument("--target_cr", type=float, default=0.7)
+    # Backward-compatible aliases. Prefer --lambda_cr / --target_cr in docs and commands.
+    parser.add_argument("--lambda_rate", type=float, default=None, help=argparse.SUPPRESS)
+    parser.add_argument("--target_rate", type=float, default=None, help=argparse.SUPPRESS)
     parser.add_argument("--disable_dynamic_rate", action="store_true")
     parser.add_argument("--disable_channel_condition", action="store_true")
     parser.add_argument("--min_dynamic_cr", type=float, default=0.3)
@@ -590,6 +596,10 @@ def main() -> None:
     - 导出最佳架构与 top-k 汇总
     """
     args = parse_args()
+    if args.lambda_rate is not None:
+        args.lambda_cr = float(args.lambda_rate)
+    if args.target_rate is not None:
+        args.target_cr = float(args.target_rate)
     set_seed(args.seed)
     run_start = time.time()
 
@@ -742,8 +752,8 @@ def main() -> None:
             "min_dynamic_cr": args.min_dynamic_cr,
             "max_dynamic_cr": args.max_dynamic_cr,
             "rate_blend_alpha": args.rate_blend_alpha,
-            "target_rate": args.target_rate,
-            "lambda_rate": args.lambda_rate,
+            "target_cr": args.target_cr,
+            "lambda_cr": args.lambda_cr,
         },
         "best_result": best_result,
         "top_k": top_k,

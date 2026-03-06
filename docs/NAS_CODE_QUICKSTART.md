@@ -25,8 +25,8 @@ Optional dynamic-selector controls:
 --min_dynamic_cr 0.3
 --max_dynamic_cr 1.0
 --rate_blend_alpha 0.7
---target_rate 0.7
---lambda_rate 0.2
+--target_cr 0.7
+--lambda_cr 0.2
 ```
 
 Outputs:
@@ -84,7 +84,7 @@ score = mean_acc
       - lambda_param * param_m
       - lambda_tx * tx_norm
       - lambda_robust * robust_gap
-      - lambda_rate * max(0, mean_cr - target_rate)
+      - lambda_cr * max(0, mean_cr - target_cr)
 ```
 
 Where:
@@ -93,7 +93,7 @@ Where:
 - `param_m`: minimize
 - `tx_cost`/`tx_norm`: minimize
 - `robust_gap`: minimize
-- `mean_cr` beyond target rate: penalized
+- `mean_cr` beyond target `cr`: penalized
 
 ## 5. Practical tips
 

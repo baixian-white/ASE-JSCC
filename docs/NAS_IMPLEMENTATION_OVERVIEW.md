@@ -70,14 +70,14 @@ score = mean_acc
       - lambda_param * param_m
       - lambda_tx * tx_norm
       - lambda_robust * robust_gap
-      - lambda_rate * max(0, mean_cr - target_rate)
+      - lambda_cr * max(0, mean_cr - target_cr)
 ```
 
 目标方向：
 
 - 最大化：`mean_acc`
 - 最小化：`param_m`, `tx_cost`, `robust_gap`
-- 约束：`mean_cr` 不超过 `target_rate`（超出会惩罚）
+- 约束：`mean_cr` 不超过 `target_cr`（超出会惩罚）
 
 ## 6. 三个入口脚本职责
 
