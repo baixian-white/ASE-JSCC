@@ -32,24 +32,6 @@ build/
 dist/
 *.egg
 
-# -------- ML Artifacts --------
-# root-level outputs
-checkpoint/
-logs/
-runs/
-
-# nested experiment outputs
-**/checkpoint/
-**/logs/
-**/runs/
-
-# model files and tensorboard events
-*.pth
-*.pt
-*.ckpt
-*.onnx
-events.out.tfevents.*
-
 # -------- Datasets / Large Files --------
 data/
 *.zip

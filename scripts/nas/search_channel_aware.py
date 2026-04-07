@@ -561,6 +561,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--image_size", type=int, default=256)
 
     parser.add_argument("--num_samples", type=int, default=20)
+    parser.add_argument(
+        "--exhaustive_search",
+        action="store_true",
+        help="Enumerate the full discrete search space instead of random sampling.",
+    )
     parser.add_argument("--top_k", type=int, default=5)
     parser.add_argument("--search_epochs", type=int, default=2)
     parser.add_argument("--search_lr", type=float, default=3e-4)
@@ -605,7 +610,11 @@ def main() -> None:
 
     train_dir = resolve_path(args.train_dir)
     valid_dir = resolve_path(args.valid_dir)
-    output_dir = resolve_path(args.output_dir) / f"{args.dataset_name}_{time.strftime('%Y%m%d_%H%M%S')}"
+    output_root = resolve_path(args.output_dir)
+    if args.exhaustive_search:
+        # Keep exhaustive proxy runs isolated from earlier random-sample searches.
+        output_root = output_root / "exhaustive_search"
+    output_dir = output_root / f"{args.dataset_name}_{time.strftime('%Y%m%d_%H%M%S')}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if not train_dir.exists():
@@ -629,6 +638,7 @@ def main() -> None:
 
     search_space = SearchSpace.default()
     rng = random.Random(args.seed)
+    total_candidates = _search_space_size(search_space)
     results_path = output_dir / "search_results.jsonl"
     progress_path = output_dir / "search_progress.jsonl"
     tensorboard_dir = output_dir / "tensorboard"
@@ -661,7 +671,7 @@ def main() -> None:
             "valid_size": len(valid_loader.dataset),
         },
         "search_space": {
-            "total_candidates": _search_space_size(search_space),
+            "total_candidates": total_candidates,
             "insertion_stage": search_space.insertion_stage,
             "se_ratio": search_space.se_ratio,
             "cr": search_space.cr,
@@ -678,13 +688,28 @@ def main() -> None:
     }
     (output_dir / "run_config.json").write_text(json.dumps(run_config, indent=2), encoding="utf-8")
 
+    if args.exhaustive_search:
+        arch_candidates = list(search_space.grid())
+        search_mode = "exhaustive"
+        planned_candidates = len(arch_candidates)
+    else:
+        if args.num_samples <= 0:
+            raise ValueError("--num_samples must be positive when --exhaustive_search is not set.")
+        arch_candidates = [search_space.sample(rng) for _ in range(args.num_samples)]
+        search_mode = "random_sample"
+        planned_candidates = len(arch_candidates)
+
+    print(
+        f"Search mode: {search_mode} | "
+        f"Evaluating {planned_candidates} candidate(s) out of {total_candidates}"
+    )
+
     all_results: List[Dict[str, object]] = []
     best_result: Dict[str, object] | None = None
 
-    for idx in range(args.num_samples):
-        arch = search_space.sample(rng)
+    for idx, arch in enumerate(arch_candidates):
         local_seed = args.seed + idx
-        print(f"[{idx + 1}/{args.num_samples}] Searching arch: {arch.tag}")
+        print(f"[{idx + 1}/{planned_candidates}] Searching arch: {arch.tag}")
 
         result = search_once(
             arch=arch,
@@ -702,7 +727,7 @@ def main() -> None:
             progress_path,
             {
                 "index": idx + 1,
-                "num_samples": args.num_samples,
+                "num_samples": planned_candidates,
                 "timestamp": datetime.now().isoformat(timespec="seconds"),
                 "arch_tag": result["arch_tag"],
                 "score": result["score"],
@@ -733,9 +758,11 @@ def main() -> None:
 
     summary = {
         "dataset_name": args.dataset_name,
-        "num_samples": args.num_samples,
+        "num_samples": planned_candidates,
         "seed": args.seed,
         "search_time_sec": float(time.time() - run_start),
+        "search_mode": search_mode,
+        "total_candidates": total_candidates,
         "results_files": {
             "search_results_jsonl": str(results_path),
             "search_progress_jsonl": str(progress_path),

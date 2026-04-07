@@ -1,0 +1,9 @@
+{
+  "insertion_stage": 4,
+  "se_ratio": 32,
+  "cr": 0.4,
+  "bottleneck_channels": 24,
+  "ae_depth": 2,
+  "kernel_size": 1,
+  "use_skip": true
+}
