@@ -9,7 +9,7 @@ python scripts/nas/search_channel_aware.py \
   --dataset_name UCMerced_LandUse \
   --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
   --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
-  --output_dir runs/nas_search \
+  --output_dir results/runs/nas_search \
   --num_samples 20 \
   --search_epochs 2 \
   --batch_size 32 \
@@ -24,7 +24,7 @@ python scripts/nas/search_channel_aware.py \
   --dataset_name UCMerced_LandUse \
   --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
   --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
-  --output_dir runs/nas_search \
+  --output_dir results/runs/nas_search \
   --exhaustive_search \
   --search_epochs 2 \
   --batch_size 32 \
@@ -55,11 +55,11 @@ python scripts/nas/search_channel_aware.py \
 
 ```bash
 python scripts/nas/retrain_candidate.py \
-  --arch_json runs/nas_search/<run_id>/best_arch.json \
+  --arch_json results/runs/nas_search/<run_id>/best_arch.json \
   --dataset_name UCMerced_LandUse \
   --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
   --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
-  --output_dir runs/nas_retrain \
+  --output_dir results/runs/nas_retrain \
   --epochs 120 \
   --batch_size 64
 ```
@@ -80,7 +80,7 @@ python scripts/nas/retrain_candidate.py \
 
 ```bash
 python scripts/nas/evaluate_pareto.py \
-  --results_jsonl runs/nas_search/<run_id>/search_results.jsonl \
+  --results_jsonl results/runs/nas_search/<run_id>/search_results.jsonl \
   --top_k 20
 ```
 

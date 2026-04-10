@@ -223,7 +223,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dataset_name", type=str, default="UCMerced_LandUse")
     parser.add_argument("--train_dir", type=str, default="data/UCMerced_LandUse/UCMerced_LandUse-train")
     parser.add_argument("--valid_dir", type=str, default="data/UCMerced_LandUse/UCMerced_LandUse-valid")
-    parser.add_argument("--output_dir", type=str, default="runs/nas_retrain")
+    parser.add_argument("--output_dir", type=str, default="results/runs/nas_retrain")
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument("--seed", type=int, default=42)
 

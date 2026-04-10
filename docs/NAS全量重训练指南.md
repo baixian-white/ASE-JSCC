@@ -7,7 +7,7 @@
 
 脚本每次只重训练 **一个架构**（通过 `--arch_json` 指定），流程如下：
 
-1. 读取架构 JSON（通常来自 `runs/nas_search/<run_id>/best_arch.json`）。
+1. 读取架构 JSON（通常来自 `results/runs/nas_search/<run_id>/best_arch.json`）。
 2. 构建 train/valid dataloader（`ImageFolder` 目录结构）。
 3. 初始化 `ChannelAwareClassifier`（可开关动态码率、信道条件、预训练骨干）。
 4. 进入 epoch 循环：
@@ -25,7 +25,7 @@
 | `--dataset_name` | str | `UCMerced_LandUse` | 结果目录命名标识 | 多数据集实验时区分 run 名称 |
 | `--train_dir` | str | `data/UCMerced_LandUse/UCMerced_LandUse-train` | 训练集目录（ImageFolder） | 换数据集时改 |
 | `--valid_dir` | str | `data/UCMerced_LandUse/UCMerced_LandUse-valid` | 验证集目录（ImageFolder） | 换数据集时改 |
-| `--output_dir` | str | `runs/nas_retrain` | 重训输出根目录 | 想按实验分组时改 |
+| `--output_dir` | str | `results/runs/nas_retrain` | 重训输出根目录 | 想按实验分组时改 |
 | `--device` | str | `cuda:0` | 训练设备 | 无 GPU 时用 `cpu` |
 | `--seed` | int | `42` | 随机种子 | 做多 seed 复现实验时改 |
 | `--batch_size` | int | `64` | 训练/验证 batch size | 显存不足时减小 |
@@ -50,11 +50,11 @@
 
 ```bash
 python scripts/nas/retrain_candidate.py \
-  --arch_json runs/nas_search/<run_id>/best_arch.json \
+  --arch_json results/runs/nas_search/<run_id>/best_arch.json \
   --dataset_name UCMerced_LandUse \
   --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
   --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
-  --output_dir runs/nas_retrain \
+  --output_dir results/runs/nas_retrain \
   --device cuda:0 \
   --epochs 120 \
   --batch_size 64 \
@@ -65,11 +65,11 @@ python scripts/nas/retrain_candidate.py \
 
 ```bash
 python scripts/nas/retrain_candidate.py \
-  --arch_json runs/nas_search/<run_id>/best_arch.json \
+  --arch_json results/runs/nas_search/<run_id>/best_arch.json \
   --dataset_name UCMerced_LandUse \
   --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
   --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
-  --output_dir runs/nas_retrain \
+  --output_dir results/runs/nas_retrain \
   --device cuda:0 \
   --image_size 224 \
   --batch_size 16 \
@@ -81,11 +81,11 @@ python scripts/nas/retrain_candidate.py \
 
 ```bash
 python scripts/nas/retrain_candidate.py \
-  --arch_json runs/nas_search/<run_id>/best_arch.json \
+  --arch_json results/runs/nas_search/<run_id>/best_arch.json \
   --dataset_name UCMerced_LandUse \
   --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
   --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
-  --output_dir runs/nas_retrain \
+  --output_dir results/runs/nas_retrain \
   --device cpu \
   --epochs 2 \
   --batch_size 8 \
@@ -97,11 +97,11 @@ python scripts/nas/retrain_candidate.py \
 
 ```bash
 python scripts/nas/retrain_candidate.py \
-  --arch_json runs/nas_search/<run_id>/best_arch.json \
+  --arch_json results/runs/nas_search/<run_id>/best_arch.json \
   --dataset_name UCMerced_LandUse \
   --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
   --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
-  --output_dir runs/nas_retrain \
+  --output_dir results/runs/nas_retrain \
   --device cuda:0 \
   --disable_dynamic_rate
 ```
@@ -110,11 +110,11 @@ python scripts/nas/retrain_candidate.py \
 
 ```bash
 python scripts/nas/retrain_candidate.py \
-  --arch_json runs/nas_search/<run_id>/best_arch.json \
+  --arch_json results/runs/nas_search/<run_id>/best_arch.json \
   --dataset_name UCMerced_LandUse \
   --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
   --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
-  --output_dir runs/nas_retrain \
+  --output_dir results/runs/nas_retrain \
   --device cuda:0 \
   --disable_channel_condition
 ```
@@ -123,11 +123,11 @@ python scripts/nas/retrain_candidate.py \
 
 ```bash
 python scripts/nas/retrain_candidate.py \
-  --arch_json runs/nas_search/<run_id>/best_arch.json \
+  --arch_json results/runs/nas_search/<run_id>/best_arch.json \
   --dataset_name UCMerced_LandUse \
   --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
   --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
-  --output_dir runs/nas_retrain \
+  --output_dir results/runs/nas_retrain \
   --device cuda:0 \
   --disable_dynamic_rate \
   --disable_channel_condition
@@ -137,11 +137,11 @@ python scripts/nas/retrain_candidate.py \
 
 ```bash
 python scripts/nas/retrain_candidate.py \
-  --arch_json runs/nas_search/<run_id>/best_arch.json \
+  --arch_json results/runs/nas_search/<run_id>/best_arch.json \
   --dataset_name UCMerced_LandUse \
   --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
   --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
-  --output_dir runs/nas_retrain \
+  --output_dir results/runs/nas_retrain \
   --device cuda:0 \
   --eval_snr_list 0,2,4,6,8,10,12,16,20,24,28
 ```
@@ -150,11 +150,11 @@ python scripts/nas/retrain_candidate.py \
 
 ```bash
 python scripts/nas/retrain_candidate.py \
-  --arch_json runs/nas_search/<run_id>/best_arch.json \
+  --arch_json results/runs/nas_search/<run_id>/best_arch.json \
   --dataset_name UCMerced_LandUse \
   --train_dir data/UCMerced_LandUse/UCMerced_LandUse-train \
   --valid_dir data/UCMerced_LandUse/UCMerced_LandUse-valid \
-  --output_dir runs/nas_retrain \
+  --output_dir results/runs/nas_retrain \
   --device cuda:0 \
   --disable_pretrained_backbone
 ```
@@ -164,16 +164,16 @@ python scripts/nas/retrain_candidate.py \
 说明：`retrain_candidate.py` 一次只训一个架构，下面命令会从 `ranked_results.json` 提取 Top-3 并循环训练。
 
 ```bash
-RUN_DIR="runs/nas_search/<run_id>"
-OUT_ROOT="runs/nas_retrain_top3"
+RUN_DIR="results/runs/nas_search/<run_id>"
+OUT_ROOT="results/runs/nas_retrain_top3"
 mkdir -p "${OUT_ROOT}/arch_jsons"
 
 python - <<'PY'
 import json
 from pathlib import Path
-run_dir = Path("runs/nas_search/<run_id>")
+run_dir = Path("results/runs/nas_search/<run_id>")
 rows = json.loads((run_dir / "ranked_results.json").read_text(encoding="utf-8"))
-out = Path("runs/nas_retrain_top3/arch_jsons")
+out = Path("results/runs/nas_retrain_top3/arch_jsons")
 out.mkdir(parents=True, exist_ok=True)
 for i, row in enumerate(rows[:3], start=1):
     (out / f"top{i}_{row['arch_tag']}.json").write_text(
@@ -199,7 +199,7 @@ done
 
 每次重训练会在：
 
-`runs/nas_retrain/<dataset>_<timestamp>/`
+`results/runs/nas_retrain/<dataset>_<timestamp>/`
 
 生成：
 
@@ -215,7 +215,7 @@ done
 
 默认开启（可用 `--disable_tensorboard` 关闭），日志目录为：
 
-`runs/nas_retrain/<dataset>_<timestamp>/tensorboard/`
+`results/runs/nas_retrain/<dataset>_<timestamp>/tensorboard/`
 
 每个 epoch 会写入：
 

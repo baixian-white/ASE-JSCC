@@ -33,9 +33,11 @@ ASE-JSCC/
 │   ├── Untitled.ipynb
 │   └── Untitled1.ipynb
 ├── data/
-├── checkpoint/
-├── logs/
-└── runs/
+└── results/
+    ├── checkpoints/
+    ├── logs/
+    ├── runs/
+    └── archive/
 ```
 
 > 所有脚本已改为“自动定位项目根目录（.git）”，可在任意工作目录执行。
@@ -66,7 +68,7 @@ python scripts/train/ASE-JSCCtrain.py --task train --cr 0.8 --num_epochs 150 --c
 断点续训：
 
 ```bash
-python scripts/train/ASE-JSCCtrain.py --task continue --cr 0.8 --num_epochs 30 --pre_checkpoint checkpoint/xxx.pth --channel_type Combined_channel
+python scripts/train/ASE-JSCCtrain.py --task continue --cr 0.8 --num_epochs 30 --pre_checkpoint results/checkpoints/xxx.pth --channel_type Combined_channel
 ```
 
 ### 3) 评估可视化（混淆矩阵 + t-SNE）
@@ -88,13 +90,13 @@ python scripts/visualization/grad_cam_visualize.py -c overpass -n 6
 单图：
 
 ```bash
-python scripts/infer/predict_demo.py --checkpoint checkpoint/xxx.pth --image data/xxx.jpg --channel_type Combined_channel --cr 0.8
+python scripts/infer/predict_demo.py --checkpoint results/checkpoints/xxx.pth --image data/xxx.jpg --channel_type Combined_channel --cr 0.8
 ```
 
 批量：
 
 ```bash
-python scripts/infer/predict_demo.py --checkpoint checkpoint/xxx.pth --data_dir data/UCMerced_LandUse-test --csv_out logs/predictions.csv
+python scripts/infer/predict_demo.py --checkpoint results/checkpoints/xxx.pth --data_dir data/UCMerced_LandUse-test --csv_out results/logs/predictions.csv
 ```
 
 ## 说明
@@ -102,3 +104,5 @@ python scripts/infer/predict_demo.py --checkpoint checkpoint/xxx.pth --data_dir 
 - 数据下载链接见 [docs/dataset.txt](docs/dataset.txt)
 - 详细项目说明见 [docs/项目说明书.md](docs/项目说明书.md)
 - 本次重构说明见 [docs/项目结构说明书.md](docs/项目结构说明书.md)
+- 分类总览见 [docs/项目分类总览.md](docs/项目分类总览.md)
+- NAS 搜索结果字段说明见 [docs/NAS搜索结果字段说明.md](docs/NAS%E6%90%9C%E7%B4%A2%E7%BB%93%E6%9E%9C%E5%AD%97%E6%AE%B5%E8%AF%B4%E6%98%8E.md)

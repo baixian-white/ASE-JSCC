@@ -19,6 +19,7 @@
 - `scripts/nas/search_channel_aware.py`：搜索入口。
 - `scripts/nas/retrain_candidate.py`：候选重训练入口。
 - `scripts/nas/evaluate_pareto.py`：Pareto 前沿筛选。
+- `docs/NAS搜索结果字段说明.md`：搜索结果字段说明与汇报读法。
 
 ## 3. 搜索空间
 

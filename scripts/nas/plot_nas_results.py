@@ -191,11 +191,24 @@ def plot_topk(df: pd.DataFrame, out_path: Path, top_k: int, dpi: int) -> str:
     top["label"] = top["rank"].astype(str) + ":" + top["arch_tag"].str.slice(0, 18)
 
     fig, ax1 = plt.subplots(figsize=(10.8, 5.8))
-    ax1.bar(top["label"], top["score"], color="#4c78a8", alpha=0.85, label="Score")
+    bars = ax1.bar(top["label"], top["score"], color="#4c78a8", alpha=0.85, label="Score")
     ax1.set_ylabel("Score")
     ax1.set_xlabel("Architecture (rank:tag)")
     ax1.tick_params(axis="x", rotation=35, labelsize=8)
     ax1.grid(alpha=0.2, axis="y")
+    ax1.set_ylim(0.8, 0.85)
+
+    # 直接标注精确 score，方便比较接近的柱状值。
+    for bar, score in zip(bars, top["score"]):
+        ax1.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.002,
+            f"{float(score):.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+            color="#2f4b7c",
+        )
 
     ax2 = ax1.twinx()
     ax2.plot(top["label"], top["mean_acc"], color="#e45756", marker="o", linewidth=1.8, label="Mean Accuracy")

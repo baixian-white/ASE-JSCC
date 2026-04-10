@@ -20,7 +20,7 @@
 
 | 项目 | 说明 |
 | --- | --- |
-| 输入架构 | `runs/nas_search/<run_id>/best_arch.json` 或 `topk_arches.json` 中的候选 |
+| 输入架构 | `results/runs/nas_search/<run_id>/best_arch.json` 或 `topk_arches.json` 中的候选 |
 | 数据集 | 例如 `UCMerced_LandUse` |
 | 数据划分 | 固定的 `train / valid` 目录 |
 | 模型 | `ChannelAwareClassifier` |
@@ -44,8 +44,8 @@
 
 如果要向导师举例，可以直接用这次实际跑过的 Top-1：
 
-- 搜索结果来源：`runs/nas_search/UCMerced_LandUse_20260305_215121/best_arch.json`
-- 重训练输出目录：`runs/nas_retrain/UCMerced_LandUse_20260305_224907`
+- 搜索结果来源：`results/runs/nas_search/UCMerced_LandUse_20260305_215121/best_arch.json`
+- 重训练输出目录：`results/runs/nas_retrain/UCMerced_LandUse_20260305_224907`
 
 ### 1.2.1 ChannelAwareClassifier 前向流程图
 
@@ -460,4 +460,3 @@ flowchart TD
 - [原始模型训练指南](./原始模型训练指南.md)
 - [模型对比评测指南](./模型基准测试指南.md)
 - [NAS 实现总览](./NAS实现总览.md)
-

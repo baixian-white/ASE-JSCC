@@ -9,7 +9,7 @@ dependencies:
   - python=3.10
   - pip
 
-  # ===== PyTorch GPU stack (CUDA 12.6，对应 PyTorch 2.5) =====
+  # ===== PyTorch GPU stack (CUDA 12.4 / modern PyTorch) =====
   - pytorch
   - torchvision
   - torchaudio
@@ -22,6 +22,8 @@ dependencies:
   - scikit-image
   - scikit-learn
   - matplotlib
+  - seaborn
+  - pillow
   - tqdm
   - tensorboard
   - opencv
@@ -36,7 +38,7 @@ dependencies:
   - pyyaml
   - cython
   - ninja
-  - setuptools
+  - setuptools=69.5.1
   - wheel
 
   - pip:

@@ -37,6 +37,8 @@ MARKER_LIST = ['o', 's', '^', 'v', 'D', 'P', 'X']
 # 1) 模型权重路径 —— ★★ 这里换成你在 SoyaHealthVision 上训练好的权重 ★★
 weight_path = (
     PROJECT_ROOT
+    / "results"
+    / "archive"
     / "Soya_120_combine_0.8"
     / "checkpoint"
     / "best_classifier_attention_auto_Soya_Combined_channel_ResNet18_120epoch_0.8.pth"
@@ -63,7 +65,7 @@ batch_size = 64
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # 输出目录（改个名字区分一下）
-out_dir = PROJECT_ROOT / "logs" / "SoyaHealthVision_ResNet18"
+out_dir = PROJECT_ROOT / "results" / "logs" / "SoyaHealthVision_ResNet18"
 out_dir.mkdir(parents=True, exist_ok=True)
 
 # ==========================

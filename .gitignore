@@ -32,6 +32,10 @@ build/
 dist/
 *.egg
 
+# -------- Experiment Outputs --------
+results/
+runs/
+
 # -------- Datasets / Large Files --------
 data/
 *.zip
@@ -45,3 +49,9 @@ data/
 *.temp
 *.bak
 *.swp
+
+# -------- Local machine / secrets --------
+.codex
+.ssh/
+:USERPROFILE.sshid_ed25519_lab_zbh
+:USERPROFILE.sshid_ed25519_lab_zbh.pub

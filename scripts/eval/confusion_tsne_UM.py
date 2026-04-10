@@ -56,7 +56,8 @@ MARKER_LIST = ['o', 's', '^', 'v', 'D', 'P', 'X']
 # 1) 模型权重路径（建议用 best_*.pth ）
 weight_path = (
     PROJECT_ROOT
-    / "checkpoint"
+    / "results"
+    / "checkpoints"
     / "best_classifier_attention_auto_UCMerced_LandUse_Combined_channel_ResNet18_150epoch_0.8.pth"
 )
 
@@ -77,7 +78,7 @@ batch_size = 64
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # 输出目录
-out_dir = PROJECT_ROOT / "logs" / "ResNet18"
+out_dir = PROJECT_ROOT / "results" / "logs" / "ResNet18"
 out_dir.mkdir(parents=True, exist_ok=True)
 
 

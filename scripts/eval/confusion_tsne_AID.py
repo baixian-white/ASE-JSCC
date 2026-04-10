@@ -38,7 +38,7 @@ MARKER_LIST = ['o', 's', '^', 'v', 'D', 'P', 'X']
 
 # 1) AID 实验的根目录（和训练脚本 get_exp_dirs 对齐）
 #    比如训练时用的是：AID_150_combine_0.8
-exp_dir = PROJECT_ROOT / "AID_150_combine_0.8"
+exp_dir = PROJECT_ROOT / "results" / "archive" / "AID_150_combine_0.8"
 
 # 2) 模型权重路径（建议用 best_* 那个）
 weight_path = (
@@ -62,8 +62,8 @@ batch_size = 64
 # 设备
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# 输出目录：直接复用训练时的 logs/ResNet18
-out_dir = Path(exp_dir) / "logs" / "ResNet18"
+# 输出目录：统一放到 results/logs
+out_dir = PROJECT_ROOT / "results" / "logs" / "AID_150_combine_0.8" / "ResNet18"
 out_dir.mkdir(parents=True, exist_ok=True)
 
 # ==========================

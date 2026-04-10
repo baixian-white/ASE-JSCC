@@ -35,15 +35,15 @@ def resolve_path(path_value: str) -> Path:
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # 璁粌杈撳嚭鐩綍锛堝厛鍏ㄥ眬寤轰竴娆★紝閬垮厤淇濆瓨鏃舵姤閿欙級
-# Path("AID_150_combine_0.8/checkpoint").mkdir(parents=True, exist_ok=True)
-# Path("AID_150_combine_0.8/logs/ResNet18").mkdir(parents=True, exist_ok=True)
+# Path("results/archive/AID_150_combine_0.8/checkpoint").mkdir(parents=True, exist_ok=True)
+# Path("results/logs/AID_150_combine_0.8/ResNet18").mkdir(parents=True, exist_ok=True)
 
 def get_exp_dirs(
     num_epochs,
     channel_type,
     cr,
     dataset_name="Soya",
-    output_dir="runs/original_train",
+    output_dir="results/runs/original_train",
     run_name=None,
 ):
     channel_tag = {
@@ -759,7 +759,7 @@ if __name__ == "__main__":
     parser.add_argument('--valid_dir', type=str, default='data/SoyaHealthVision/valid', help='ImageFolder validation directory.')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size for training and validation loaders.')
     parser.add_argument('--num_workers', type=int, default=0, help='Number of dataloader workers.')
-    parser.add_argument('--output_dir', type=str, default='runs/original_train', help='Output root directory for original-model runs.')
+    parser.add_argument('--output_dir', type=str, default='results/runs/original_train', help='Output root directory for original-model runs.')
     parser.add_argument('--run_name', type=str, default='', help='Optional custom run folder name under output_dir.')
     args = parser.parse_args()
 
@@ -777,4 +777,3 @@ if __name__ == "__main__":
         args.output_dir,
         args.run_name.strip() if isinstance(args.run_name, str) else "",
     )
-

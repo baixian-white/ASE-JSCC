@@ -264,7 +264,7 @@ def _add_model_args(parser: argparse.ArgumentParser, prefix: str, default_name: 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Benchmark two models under unified channel-aware evaluation.")
     parser.add_argument("--data_dir", type=str, required=True, help="ImageFolder directory for benchmarking.")
-    parser.add_argument("--output_dir", type=str, default="runs/model_benchmark")
+    parser.add_argument("--output_dir", type=str, default="results/runs/model_benchmark")
     parser.add_argument("--run_name", type=str, default="")
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument("--batch_size", type=int, default=64)

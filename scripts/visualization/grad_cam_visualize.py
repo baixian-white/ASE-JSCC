@@ -78,7 +78,7 @@ TARGET_LAYERS = {
 
 # 设备与输出目录
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-out_dir = PROJECT_ROOT / "logs" / "ResNet18_gradcam_multi"
+out_dir = PROJECT_ROOT / "results" / "logs" / "ResNet18_gradcam_multi"
 out_dir.mkdir(parents=True, exist_ok=True)
 
 # 固定随机种子，方便复现
